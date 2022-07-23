@@ -5,6 +5,8 @@ import math
 import itertools
 import time
 
+golden_ratio = (1.0 + math.sqrt(5.0)) / 2.0
+
 def hyperplanes_to_dual_points(equations):
   return [[x/equation[-1] for x in equation[:-1]] for equation in equations]
 
@@ -33,43 +35,125 @@ def random(n):
   points = [[p[0]-0.5, p[1]-0.5, p[2]-0.5] for p in points]
   return points
 
+def even_permutation(point):
+  assert(len(point) == 3)
+  permutation_points = []
+  for i in range(len(point)):
+    p = point[i:] + point[:i]
+    permutation_points.append(list(p))
+  return permutation_points
+
+def even_permutations(points):
+  permutation_points = []
+  for p in points:
+    permutation_points += even_permutation(p)
+  return sorted(permutation_points)
+
+def odd_permutation(point):
+  assert(len(point) == 3)
+  all_permutations = [list(p) for p in itertools.permutations(point)]
+  return sorted([p for p in all_permutations if p not in even_permutation(point)])
+
+def odd_permutations(points):
+  permutation_points = []
+  for p in points:
+    permutation_points += odd_permutation(p)
+  return sorted(permutation_points)
+
+def all_permutations(points):
+  permutation_points = []
+  for p in points:
+    permutation_points += itertools.permutations(p)
+  return [list(p) for p in sorted(list(set(permutation_points)))]
+
+def has_even_number_of_minus_signs(p):
+  return sum(1 for r in p if r < 0.0) % 2 == 0
+
+def has_odd_number_of_minus_signs(p):
+  return sum(1 for r in p if r < 0.0) % 2 == 1
+
 def tetrahedron():
-  return [[math.sqrt(8/9), 0, -1/3], [-math.sqrt(2/9), math.sqrt(2/3), -1/3], [-math.sqrt(2/9), -math.sqrt(2/3), -1/3], [0,0,1]]
+  return [[-1,-1,1],[-1,1,-1],[1,-1,-1],[1,1,1]]
 
 def cube():
   return list(itertools.product((-1,1), (-1,1), (-1,1)))
 
-def rombicosidodecahedron():
-  g = (1 + math.sqrt(5))/2.0
+def octahedron():
+  return all_permutations(list(itertools.product((0,),(0,),(-1,1))))
+
+def dodecahedron():
+  r = list(itertools.product((-1,1), (-1,1), (-1,1)))
+  r += even_permutations(list(itertools.product((0,), (-1/golden_ratio,1/golden_ratio), (-golden_ratio,golden_ratio))))
+  return r
+
+def icosahedron():
+  return even_permutations(list(itertools.product((0,),(-1,1),(-golden_ratio,golden_ratio))))
+
+def truncated_tetrahedron():
+  return [p for p in all_permutations(list(itertools.product((-1,1),(-1,1),(-3,3)))) if has_even_number_of_minus_signs(p)]
+
+def cuboctahedron():
+  return all_permutations(list(itertools.product((-1,1),(-1,1),(0,))))
+
+def truncated_cube():
+  p = math.sqrt(2.0) - 1.0
+  return all_permutations(list(itertools.product((-1,1),(-1,1),(-p,p))))
+  
+def truncated_octahedron():
+  return all_permutations(list(itertools.product((0,),(-1,1),(-2,2))))
+
+def rhombicuboctahedron():
+  p = math.sqrt(2.0) + 1.0
+  return all_permutations(list(itertools.product((-1,1),(-1,1),(-p,p))))
+
+def truncated_cuboctahedron():
+  p = math.sqrt(2.0)
+  return all_permutations(list(itertools.product((-1,1),(-(1+p),1+p),(-(1+2*p),1+2*p))))
+  
+def snub_cube():
+  t = 1.839286755214161132551851564
   r = []
-  r += list(itertools.product((-1,1), (-1,1), (-g**3, g**3)))
-  r += list(itertools.product((-1,1), (-g**3, g**3), (-1,1)))
-  r += list(itertools.product((-g**3, g**3), (-1,1), (-1,1)))
+  r += [p for p in even_permutations(list(itertools.product((-1,1),(-1/t,1/t),(-t,t)))) if has_odd_number_of_minus_signs(p)]
+  r += [p for p in odd_permutations(list(itertools.product((-1,1),(-1/t,1/t),(-t,t)))) if has_even_number_of_minus_signs(p)]
+  return r
 
-  r += list(itertools.product((-g**2, g**2), (-g,g), (-2*g,2*g)))
-  r += list(itertools.product((-2*g, 2*g), (-g**2, g**2), (-g,g)))
-  r += list(itertools.product((-g, g), (-2*g, 2*g), (-g**2,g**2)))
+def icosidodecahedron():
+  r = []
+  r += all_permutations(list(itertools.product((0,),(0,),(-golden_ratio,golden_ratio))))
+  r += even_permutations(list(itertools.product((-0.5,0.5),(-golden_ratio/2,golden_ratio/2),(-golden_ratio**2/2,golden_ratio**2/2))))
+  return r
 
-  r += list(itertools.product((-(2+g), 2+g), (0,), (-g**2, g**2)))
-  r += list(itertools.product((-g**2, g**2), (-(2+g),2+g), (0,)))
-  r += list(itertools.product((0,), (-g**2,g**2), (-(2+g), 2+g)))
+def truncated_dodecahedron():
+  r = []
+  r += even_permutations(list(itertools.product((0,),(-1/golden_ratio,1/golden_ratio),(-(2+golden_ratio),2+golden_ratio))))
+  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio),(-golden_ratio,golden_ratio),(-2*golden_ratio,2*golden_ratio))))
+  r += even_permutations(list(itertools.product((-golden_ratio,golden_ratio),(-2,2),(-(golden_ratio+1),golden_ratio+1))))
   return r
 
 def truncated_icosahedron():
   g = (1 + math.sqrt(5))/2.0
   r = []
-  r += list(itertools.product((0,), (-1,1), (-3*g, 3*g)))
-  r += list(itertools.product((-3*g, 3*g), (0,), (-1,1)))
-  r += list(itertools.product((-1,1), (-3*g, 3*g), (0,)))
-
-  r += list(itertools.product((-1,1), (-(2+g), 2+g), (-2*g, 2*g)))
-  r += list(itertools.product((-2*g, 2*g), (-1,1), (-(2+g), 2+g)))
-  r += list(itertools.product((-(2+g), 2+g), (-2*g, 2*g), (-1,1)))
-
-  r += list(itertools.product((-g, g), (-2,2), (-(2*g+1), 2*g+1)))
-  r += list(itertools.product((-(2*g+1), 2*g+1), (-g, g), (-2,2)))
-  r += list(itertools.product((-2,2), (-(2*g+1), 2*g+1), (-g, g)))
+  r += odd_permutations(list(itertools.product((0,), (-1,1), (-3*g, 3*g))))
+  r += odd_permutations(list(itertools.product((-1,1), (-(2+g), 2+g), (-2*g, 2*g))))
+  r += odd_permutations(list(itertools.product((-g, g), (-2,2), (-(2*g+1), 2*g+1))))
   return r
+
+def rombicosidodecahedron():
+  r = []
+  r += even_permutations(list(itertools.product((-1,1), (-1,1), (-golden_ratio**3, golden_ratio**3))))
+  r += even_permutations(list(itertools.product((-golden_ratio**2,golden_ratio**2), (-golden_ratio,golden_ratio), (-2*golden_ratio, 2*golden_ratio))))
+  r += even_permutations(list(itertools.product((-(2+golden_ratio),2+golden_ratio), (0,), (-golden_ratio**2, golden_ratio**2))))
+  return r
+
+def truncated_icosidodecahedron():
+  r = []
+  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio), (-1/golden_ratio,1/golden_ratio), (-(3+golden_ratio), 3+golden_ratio))))
+  r += even_permutations(list(itertools.product((-2/golden_ratio,2/golden_ratio), (-golden_ratio,golden_ratio), (-(1+2*golden_ratio), 1+2*golden_ratio))))
+  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio), (-golden_ratio**2,golden_ratio**2), (-(-1+3*golden_ratio), -1+3*golden_ratio))))
+  r += even_permutations(list(itertools.product((-(2*golden_ratio-1),2*golden_ratio-1), (-2,2), (-(2+golden_ratio), 2+golden_ratio))))
+  r += even_permutations(list(itertools.product((-golden_ratio,golden_ratio), (-3,3), (-2*golden_ratio, 2*golden_ratio))))
+  return r
+
 
 def plot(points, hull):
   plt.plot(points[:,0], points[:,1], 'o')
@@ -155,65 +239,72 @@ class Polygon:
       self.test[3] = True
       return False
 
-    return self.compute_largest_scaling(other) > 1.0 + 1e-9
+    return self.compute_largest_scaling(other) > 1.0 + 1e-12
 
-def bruteforce(polyhedron, n, q_poly = None, p_poly = None, grid_size = None):
-  assert((q_poly and p_poly and grid_size) or (not q_poly and not p_poly and not grid_size))
-
-  polygons = []
-  n_half = round(n/2.0)
-  if q_poly:
-    for qp in [q_poly, p_poly]:
-      for i in range(n_half):
-        theta = min(max(qp[0] - grid_size + 2.0 * grid_size * i / n_half, 0), 2 * math.pi)
-        for j in range(n_half):
-          phi_bar = min(max(qp[1] - grid_size + 2.0 * grid_size * j / n_half, -1.0), 1.0)
-          phi = math.acos(phi_bar)
-          points_2d = project_to_plane(polyhedron, theta, phi)
-          polygons.append(Polygon(points_2d, theta, phi, phi_bar))
-  else:
-    for i in range(n):
-      theta = (2 * math.pi * i) / n
-      #for j in range(n):
-      #  phi_bar = -1 + 2 * j / (n - 1.0)
-      for j in range(n_half):
-        phi_bar = -1 + 2 * j / (n - 1.0)
-        phi = math.acos(phi_bar)
-        points_2d = project_to_plane(polyhedron, theta, phi)
-        polygons.append(Polygon(points_2d, theta, phi, phi_bar))
-
+def bruteforce(q_polygons, p_polygons):
   max_scaling = 0.0
-  found = False
+  best_q, best_p = None, None
   test = [0, 0, 0, 0]
   test_unique = [0, 0, 0, 0]
   n_tests = 0
-  for i, p1 in enumerate(polygons):
-    print(str(i) + ' of ' + str(len(polygons)) + (' ' + str(best_p1.largest_scaling))  if found else '')
-    for j, p2 in enumerate(polygons):
-      if i == j: continue
+  for qi, q in enumerate(q_polygons):
+    for pj, p in enumerate(p_polygons):
+      if pj % 10 == 0:
+        print('Testing polygon for q number ' + str(pi + 1) + ', ' + str(pj + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
       n_tests += 1
-      if p1.contains(p2):
-        if p1.largest_scaling > max_scaling:
-          found = True
-          max_scaling = p1.largest_scaling
-          best_p1 = p1
-          best_p2 = p2
-          print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, p1.largest_scaling))
+      if q.contains(p):
+        if q.largest_scaling > max_scaling:
+          max_scaling = q.largest_scaling
+          best_q, best_p = q, p
+          print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, q.largest_scaling))
       else:
-        test_unique[0] += 1 if p1.test[0] and not p1.test[1] and not p1.test[2] else 0
-        test_unique[1] += 1 if p1.test[1] and not p1.test[0] and not p1.test[2] else 0
-        test_unique[2] += 1 if p1.test[2] and not p1.test[0] and not p1.test[1] else 0
-        test_unique[3] += 1 if p1.test[3] and not p1.test[0] and not p1.test[1] and not p1.test[2] else 0
         for i in range(4):
-          test[i] += 1 if p1.test[i] else 0
+          test_unique[i] += 1 if q.test[i] and all(j == i or not q.test[j] for j in range(4)) else 0
+          test[i] += 1 if q.test[i] else 0
+  print('')
 
-  if found:
-    p1 = best_p1
-    p2 = best_p2
-    p1.contains(p2)
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, p1.largest_scaling))
+  if max_scaling > 0.0:
+    q, p = best_q, best_p
+    q.contains(p) # update values
+    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, q.largest_scaling))
+
   print('tests: ' + str(test) + " of: " + str(n_tests))
   print('test unique: ' + str(test_unique))
+  return best_q, best_p, max_scaling
+
+
+def search_sphere(polyhedron, n, max_factor = 1.0):
+  polygons = []
+  n = round(max_factor * n)
+  for i in range(n):
+    print('Creating polytope for theta number %s of %s' % (i + 1, n), end='\r')
+    theta = (max_factor * 2 * math.pi * i) / n
+    for j in range(n):
+      phi_bar = -1 + max_factor * 2 * j / (n - 1.0)
+    #for j in range(n_half):
+    #  phi_bar = -1 + 2 * j / (n - 1.0)
+      phi = math.acos(phi_bar)
+      points_2d = project_to_plane(polyhedron, theta, phi)
+      polygons.append(Polygon(points_2d, theta, phi, phi_bar))
+  p_polygons = polygons
+  q_polygons = polygons
+  print('')
+  return bruteforce(q_polygons, p_polygons)
+
+def search_around_point(polyhedron, n, q_angles, p_angles, grid_size):
+  p_polygons = []
+  q_polygons = []
+  n_half = round(n / 2.0)
+  for angles, polygons in [(q_angles, q_polygons), (p_angles, p_polygons)]:
+    for i in range(n_half):
+      theta = min(max(angles[0] - grid_size + 2.0 * grid_size * i / n_half, 0), 2 * math.pi)
+      for j in range(n_half):
+        phi_bar = min(max(angles[1] - grid_size + 2.0 * grid_size * j / n_half, -1.0), 1.0)
+        phi = math.acos(phi_bar)
+        points_2d = project_to_plane(polyhedron, theta, phi)
+        polygons.append(Polygon(points_2d, theta, phi, phi_bar))
+      theta = (2 * math.pi * i) / n
+    return bruteforce(q_polygons, p_polygons)
 
 def test_single(polyhedron, q, p):
   theta_q, phi_bar_q = q
@@ -221,26 +312,63 @@ def test_single(polyhedron, q, p):
   phi_q = math.acos(phi_bar_q)
   phi_p = math.acos(phi_bar_p)
 
-  points_2d = project_to_plane(polyhedron, theta_q, phi_q)
-  p1 = Polygon(points_2d, theta_q, phi_q, phi_bar_q)
-  p2 = Polygon(points_2d, theta_p, phi_p, phi_bar_p)
+  points_q = project_to_plane(polyhedron, theta_q, phi_q)
+  points_p = project_to_plane(polyhedron, theta_p, phi_p)
+  p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
+  p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
   if p1.contains(p2):
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, p1.largest_scaling))
   else:
     print('No containment')
 
 def run():
-  #c = rombicosidodecahedron()
-  #c = truncated_icosahedron()
-  #c = cube()
-  #c = tetrahedron()
+  c = cube()
+  c = dodecahedron()
   c = random(20)
-  n = 10
-  t = time.time()
-  bruteforce(c, n)
-  #bruteforce(c, 101, [0, -1.0], [4.477651349779, -0.80473785415], 0.000000001) # tetraeder
+  c = icosahedron()
+  c = truncated_tetrahedron()
+  c = truncated_cube()
+  c = tetrahedron()
+  c = truncated_icosahedron()
+  c = truncated_octahedron()
+  c = snub_cube()
+  c = cuboctahedron()
+  c = rombicosidodecahedron()
 
-  #bruteforce(c, n, [0.4181333, -0.091333], [0.62666, 0.2499666], 0.001) # truncated icosahedron
+  n = 1001
+  t = time.time()
+  p1, p2, max_scaling = search_sphere(c, n, max_factor=0.05)
+  #p1, p2, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
+
+  #test_single(truncated_icosahedron(), [1.5698707894615636, 0.24898946607017533], [1.2501992987692, -0.578614034754386]) # 1.00195696
+  #test_single(cuboctahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
+
+
+  #test_single(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
+  #test_single(dodecahedron(), [4.91885536, -0.4651241815], [0.85533109966, -0.51181376779]) # 1.010822219108
+  #test_single(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
+  #test_single(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
+  #test_single(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
+  #test_single(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
+  #test_single(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
+
+  if True and p1 and p2:
+    grid = 1
+    n = 11
+    best_p1, best_p2 = p1, p2
+    while grid > 1e-8:
+      grid *= 0.1
+      improvement = True
+      print('grid: %s' % grid)
+      while improvement:
+        p1, p2 = best_p1, best_p2
+        [p1, p2, max_scaling2] = bruteforce(c, n, [p1.theta, p1.phi_bar], [p2.theta, p2.phi_bar], grid)
+        improvement = max_scaling2 > max_scaling
+        if improvement:
+          max_scaling = max_scaling2
+          best_p1, best_p2 = p1, p2
+
+
   d = time.time() - t
   print('Time: %s' % d)
 
