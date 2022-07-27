@@ -298,7 +298,7 @@ def bruteforce(q_polygons, p_polygons):
             test[i] += 1 if test[i] else 0
   print('')
 
-  if max_scaling > 0.0:
+  if max_scaling > 1.0 and best_q and best_p:
     q, p = best_q, best_p
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, max_scaling))
 
@@ -350,31 +350,41 @@ def test_single(polyhedron, q, p):
   points_p = project_to_plane(polyhedron, theta_p, phi_p)
   p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
   p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
-  if p1.contains(p2):
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, p1.largest_scaling))
+  contains, largest_scaling, test = p1.contains(p2)
+  if contains
+    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
   else:
     print('No containment')
 
 def run():
-  c = dodecahedron()
   c = random(20)
   c = icosahedron()
   c = truncated_tetrahedron()
   c = truncated_cube()
   c = tetrahedron()
-  c = truncated_icosahedron()
   c = truncated_octahedron()
   c = snub_cube()
-  c = cuboctahedron()
   c = rombicosidodecahedron()
+  c = truncated_icosahedron()
+  c = truncated_dodecahedron()
   c = cube()
+  c = dodecahedron()
 
-  n = 21
+  c = cuboctahedron()
+  c = rhombicuboctahedron()
+  c = truncated_cuboctahedron()
+  c = icosidodecahedron()
+  c = truncated_icosidodecahedron()
+
+  c = snub_cube()
+  c = rhombicuboctahedron()
+  #c = snub_dodecahedron()
+
+  n = 31
   t = time.time()
   q, p, max_scaling = search_sphere(c, n)
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
 
-  #test_single(truncated_icosahedron(), [1.5698707894615636, 0.24898946607017533], [1.2501992987692, -0.578614034754386]) # 1.00195696
   #test_single(cuboctahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
 
 
@@ -383,8 +393,12 @@ def run():
   #test_single(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
   #test_single(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
   #test_single(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
+
   #test_single(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
   #test_single(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
+
+  #test_single(truncated_dodecahedron(), [5.707191649, 0.0983882599999], [0.7683968876898, -0.5922993299999]) # 1.00161296
+  #test_single(truncated_icosahedron(), [1.32258347578, -0.0012256209999], [0.862237455, -0.835966629666]) # 1.0019614
 
   if True and q and p:
     grid = 1
