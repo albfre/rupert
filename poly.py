@@ -4,6 +4,8 @@ import numpy as np
 import math
 import itertools
 import time
+from multiprocessing import Pool
+from functools import partial
 
 golden_ratio = (1.0 + math.sqrt(5.0)) / 2.0
 
@@ -208,7 +210,6 @@ class Polygon:
     self.area = area(self.vertex_points)
     self.box = None if len(self.vertex_points) <= 16 else Polygon(box(self.vertex_points), theta, phi, phi_bar)
     self.largest_vertex = None
-    self.largest_scaling = 1.0
 
   def compute_largest_scaling(self, other):
     equations = [] # Lij
@@ -226,47 +227,80 @@ class Polygon:
         self.largest_vertex = vertex
         largest_scaling_squared = scaling_squared
 
-    self.largest_scaling = math.sqrt(largest_scaling_squared)
-    return self.largest_scaling
+    return math.sqrt(largest_scaling_squared)
 
   def contains(self, other):
-    self.test = [self.perimeter < other.perimeter, self.diameter < other.diameter, self.area < other.area, False]
-    if self.perimeter < other.perimeter: return False
-    if self.diameter < other.diameter: return False
-    if self.area < other.area: return False
+    test = [self.perimeter < other.perimeter, self.diameter < other.diameter, self.area < other.area, False]
+    if self.perimeter < other.perimeter: return False, 0.0, test
+    if self.diameter < other.diameter: return False, 0.0, test
+    if self.area < other.area: return False, 0.0, test
 
     if self.box and not self.box.contains(other):
-      self.test[3] = True
-      return False
+      test[3] = True
+      return False, 0.0, test
 
-    return self.compute_largest_scaling(other) > 1.0 + 1e-12
+    largest_scaling = self.compute_largest_scaling(other) 
+    return largest_scaling > 1.0 + 1e-14, largest_scaling, test
+
+def brute_force_inner(q, p):
+  best_q, best_p = None, None
+  test = [0, 0, 0, 0]
+  test_unique = [0, 0, 0, 0]
+  max_scaling = 0.0
+  contains, largest_scaling, test = q.contains(p)
+  if contains:
+    if largest_scaling > max_scaling:
+      max_scaling = largest_scaling
+      best_q, best_p = q, p
+  else:
+    for i in range(4):
+      test_unique[i] += 1 if test[i] and all(j == i or not test[j] for j in range(4)) else 0
+      test[i] += 1 if test[i] else 0
+  return max_scaling, best_q, best_p, test, test_unique
 
 def bruteforce(q_polygons, p_polygons):
-  max_scaling = 0.0
+  max_scaling = 1.0
   best_q, best_p = None, None
   test = [0, 0, 0, 0]
   test_unique = [0, 0, 0, 0]
   n_tests = 0
-  for qi, q in enumerate(q_polygons):
-    for pj, p in enumerate(p_polygons):
-      if pj % 10 == 0:
-        print('Testing polygon for q number ' + str(pi + 1) + ', ' + str(pj + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
-      n_tests += 1
-      if q.contains(p):
-        if q.largest_scaling > max_scaling:
-          max_scaling = q.largest_scaling
-          best_q, best_p = q, p
-          print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, q.largest_scaling))
-      else:
-        for i in range(4):
-          test_unique[i] += 1 if q.test[i] and all(j == i or not q.test[j] for j in range(4)) else 0
-          test[i] += 1 if q.test[i] else 0
+  if True:
+    with Pool() as pool:
+      for qi, q in enumerate(q_polygons):
+        print('Testing polygon for q number ' + str(qi + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
+        n_tests += 1
+        result = pool.map(partial(brute_force_inner, q), p_polygons)
+        max_scaling_inner = 0.0
+        for max_scaling_r, best_q_r, best_p_r, test_r, test_unique_r in result:
+          if max_scaling_r > max_scaling:
+            max_scaling= max_scaling_r
+            best_q, best_p = best_q_r, best_p_r
+            print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (best_q.theta, best_q.phi_bar, best_p.theta, best_p.phi_bar, max_scaling))
+          for i in range(len(test)):
+            test[i] += test_r[i]
+            test_unique[i] += test_unique_r[i]
+  else:
+    for qi, q in enumerate(q_polygons):
+      print('Testing polygon for q number ' + str(qi + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
+      for pj, p in enumerate(p_polygons):
+     #   if pj % 10 == 0:
+     #     print('Testing polygon for q number ' + str(qi + 1) + ', ' + str(pj + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
+        n_tests += 1
+        contains, largest_scaling, test = q.contains(p)
+        if contains:
+          if largest_scaling > max_scaling:
+            max_scaling = largest_scaling
+            best_q, best_p = q, p
+            print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, max_scaling))
+        else:
+          for i in range(4):
+            test_unique[i] += 1 if test[i] and all(j == i or not test[j] for j in range(4)) else 0
+            test[i] += 1 if test[i] else 0
   print('')
 
   if max_scaling > 0.0:
     q, p = best_q, best_p
-    q.contains(p) # update values
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, q.largest_scaling))
+    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, max_scaling))
 
   print('tests: ' + str(test) + " of: " + str(n_tests))
   print('test unique: ' + str(test_unique))
@@ -275,12 +309,12 @@ def bruteforce(q_polygons, p_polygons):
 
 def search_sphere(polyhedron, n, max_factor = 1.0):
   polygons = []
-  n = round(max_factor * n)
-  for i in range(n):
-    print('Creating polytope for theta number %s of %s' % (i + 1, n), end='\r')
-    theta = (max_factor * 2 * math.pi * i) / n
+  n_theta = round(max_factor * n)
+  for i in range(n_theta):
+    print('Creating polytope for theta number %s of %s' % (i + 1, n_theta), end='\r')
+    theta = (max_factor * 2 * math.pi * i) / n_theta
     for j in range(n):
-      phi_bar = -1 + max_factor * 2 * j / (n - 1.0)
+      phi_bar = -1 + 2 * j / (n - 1.0)
     #for j in range(n_half):
     #  phi_bar = -1 + 2 * j / (n - 1.0)
       phi = math.acos(phi_bar)
@@ -304,7 +338,7 @@ def search_around_point(polyhedron, n, q_angles, p_angles, grid_size):
         points_2d = project_to_plane(polyhedron, theta, phi)
         polygons.append(Polygon(points_2d, theta, phi, phi_bar))
       theta = (2 * math.pi * i) / n
-    return bruteforce(q_polygons, p_polygons)
+  return bruteforce(q_polygons, p_polygons)
 
 def test_single(polyhedron, q, p):
   theta_q, phi_bar_q = q
@@ -322,7 +356,6 @@ def test_single(polyhedron, q, p):
     print('No containment')
 
 def run():
-  c = cube()
   c = dodecahedron()
   c = random(20)
   c = icosahedron()
@@ -334,11 +367,12 @@ def run():
   c = snub_cube()
   c = cuboctahedron()
   c = rombicosidodecahedron()
+  c = cube()
 
-  n = 1001
+  n = 21
   t = time.time()
-  p1, p2, max_scaling = search_sphere(c, n, max_factor=0.05)
-  #p1, p2, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
+  q, p, max_scaling = search_sphere(c, n)
+  #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
 
   #test_single(truncated_icosahedron(), [1.5698707894615636, 0.24898946607017533], [1.2501992987692, -0.578614034754386]) # 1.00195696
   #test_single(cuboctahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
@@ -352,22 +386,20 @@ def run():
   #test_single(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
   #test_single(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
 
-  if True and p1 and p2:
+  if True and q and p:
     grid = 1
     n = 11
-    best_p1, best_p2 = p1, p2
+    best_q, best_p = q, p
     while grid > 1e-8:
       grid *= 0.1
       improvement = True
       print('grid: %s' % grid)
       while improvement:
-        p1, p2 = best_p1, best_p2
-        [p1, p2, max_scaling2] = bruteforce(c, n, [p1.theta, p1.phi_bar], [p2.theta, p2.phi_bar], grid)
+        [q, p, max_scaling2] = search_around_point(c, n, [best_q.theta, best_q.phi_bar], [best_p.theta, best_p.phi_bar], grid)
         improvement = max_scaling2 > max_scaling
         if improvement:
           max_scaling = max_scaling2
-          best_p1, best_p2 = p1, p2
-
+          best_q, best_p = q, p
 
   d = time.time() - t
   print('Time: %s' % d)
