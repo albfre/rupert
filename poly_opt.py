@@ -6,6 +6,7 @@ import itertools
 import time
 from multiprocessing import Pool
 from functools import partial
+from scipy.optimize import minimize
 
 golden_ratio = (1.0 + math.sqrt(5.0)) / 2.0
 
@@ -30,6 +31,11 @@ def project_to_plane(points, theta, phi):
   sp = math.sin(phi)
   cp = math.cos(phi)
   return [[-st * p[0] + ct * p[1], -ct * cp * p[0] - st * cp * p[1] + sp * p[2]] for p in points]
+
+def rotate(points, alpha):
+  ca = math.cos(alpha)
+  sa = math.sin(alpha)
+  return [[ca * p[0] - sa * p[1],   sa * p[0] + ca * p[1]] for p in points]
 
 def random(n):
   rng = np.random.default_rng(1338)
@@ -242,103 +248,6 @@ class Polygon:
     largest_scaling = self.compute_largest_scaling(other) 
     return largest_scaling > 1.0 + 1e-14, largest_scaling, test
 
-def brute_force_inner(q, p):
-  best_q, best_p = None, None
-  test = [0, 0, 0, 0]
-  test_unique = [0, 0, 0, 0]
-  max_scaling = 0.0
-  contains, largest_scaling, test = q.contains(p)
-  if contains:
-    if largest_scaling > max_scaling:
-      max_scaling = largest_scaling
-      best_q, best_p = q, p
-  else:
-    for i in range(4):
-      test_unique[i] += 1 if test[i] and all(j == i or not test[j] for j in range(4)) else 0
-      test[i] += 1 if test[i] else 0
-  return max_scaling, best_q, best_p, test, test_unique
-
-def bruteforce(q_polygons, p_polygons):
-  max_scaling = 1.0
-  best_q, best_p = None, None
-  test = [0, 0, 0, 0]
-  test_unique = [0, 0, 0, 0]
-  n_tests = 0
-  if True:
-    with Pool() as pool:
-      for qi, q in enumerate(q_polygons):
-        print('Testing polygon for q number ' + str(qi + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
-        n_tests += 1
-        result = pool.map(partial(brute_force_inner, q), p_polygons)
-        max_scaling_inner = 0.0
-        for max_scaling_r, best_q_r, best_p_r, test_r, test_unique_r in result:
-          if max_scaling_r > max_scaling:
-            max_scaling= max_scaling_r
-            best_q, best_p = best_q_r, best_p_r
-            print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (best_q.theta, best_q.phi_bar, best_p.theta, best_p.phi_bar, max_scaling))
-          for i in range(len(test)):
-            test[i] += test_r[i]
-            test_unique[i] += test_unique_r[i]
-  else:
-    for qi, q in enumerate(q_polygons):
-      print('Testing polygon for q number ' + str(qi + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
-      for pj, p in enumerate(p_polygons):
-     #   if pj % 10 == 0:
-     #     print('Testing polygon for q number ' + str(qi + 1) + ', ' + str(pj + 1) + ' of ' + str(len(q_polygons)) + ', ' + str(max_scaling), end='\r')
-        n_tests += 1
-        contains, largest_scaling, test = q.contains(p)
-        if contains:
-          if largest_scaling > max_scaling:
-            max_scaling = largest_scaling
-            best_q, best_p = q, p
-            print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, max_scaling))
-        else:
-          for i in range(4):
-            test_unique[i] += 1 if test[i] and all(j == i or not test[j] for j in range(4)) else 0
-            test[i] += 1 if test[i] else 0
-  print('')
-
-  if max_scaling > 1.0 and best_q and best_p:
-    q, p = best_q, best_p
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (q.theta, q.phi_bar, p.theta, p.phi_bar, max_scaling))
-
-  print('tests: ' + str(test) + " of: " + str(n_tests))
-  print('test unique: ' + str(test_unique))
-  return best_q, best_p, max_scaling
-
-
-def search_sphere(polyhedron, n, max_factor = 1.0):
-  polygons = []
-  n_theta = round(max_factor * n)
-  for i in range(n_theta):
-    print('Creating polytope for theta number %s of %s' % (i + 1, n_theta), end='\r')
-    theta = (max_factor * 2 * math.pi * i) / n_theta
-    for j in range(n):
-      phi_bar = -1 + 2 * j / (n - 1.0)
-    #for j in range(n_half):
-    #  phi_bar = -1 + 2 * j / (n - 1.0)
-      phi = math.acos(phi_bar)
-      points_2d = project_to_plane(polyhedron, theta, phi)
-      polygons.append(Polygon(points_2d, theta, phi, phi_bar))
-  p_polygons = polygons
-  q_polygons = polygons
-  print('')
-  return bruteforce(q_polygons, p_polygons)
-
-def search_around_point(polyhedron, n, q_angles, p_angles, grid_size):
-  p_polygons = []
-  q_polygons = []
-  n_half = round(n / 2.0)
-  for angles, polygons in [(q_angles, q_polygons), (p_angles, p_polygons)]:
-    for i in range(n_half):
-      theta = min(max(angles[0] - grid_size + 2.0 * grid_size * i / n_half, 0), 2 * math.pi)
-      for j in range(n_half):
-        phi_bar = min(max(angles[1] - grid_size + 2.0 * grid_size * j / n_half, -1.0), 1.0)
-        phi = math.acos(phi_bar)
-        points_2d = project_to_plane(polyhedron, theta, phi)
-        polygons.append(Polygon(points_2d, theta, phi, phi_bar))
-      theta = (2 * math.pi * i) / n
-  return bruteforce(q_polygons, p_polygons)
 
 def test_single(polyhedron, q_angles, p_angles):
   theta_q, phi_bar_q = q_angles
@@ -355,83 +264,130 @@ def test_single(polyhedron, q_angles, p_angles):
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
   else:
     print('No containment')
+  return contains
+
+def constraints_fun(x, q_in, ps_in):
+  assert(len(x) == 6)
+  theta_q, phi_q, theta_p, phi_p, alpha, t = x
+  q = project_to_plane(q_in, theta_q, phi_q)
+  ps = rotate(project_to_plane(ps_in, theta_p, phi_p), alpha)
+
+  constraints = []
+  r = []
+  for p in ps:
+    n = len(q)
+    rp = []
+    rn = []
+    for i in range(n):
+      next_i = (i + 1) % n
+      q1 = q[next_i]
+      q0 = q[i]
+      det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
+      constraints.append(det)
+      rp.append(det >= 0.0)
+      rn.append(det <= 0.0)
+    r.append(all(rp) or all(rn))
+  return constraints
+
+def constraints_fun_ij(x, qs, ps, i, j):
+  assert(len(x) == 6)
+  (theta_q, phi_q, theta_p, phi_p, alpha, t) = x
+  next_i = (i + 1) % len(qs)
+  q0, q1 = project_to_plane([qs[i], qs[next_i]], theta_q, phi_q)
+  p = rotate(project_to_plane([ps[j]], theta_p, phi_p), alpha)[0]
+  det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
+  #print('C: %s, %s: %s' % (i,j,det))
+  return t - det
+
+def obj(x):
+  return sum(y**2 for y in x)
+
+def obj_grad(x):
+  return [2 * y for y in x]
+
+def constr_test(x):
+  return x[2] - 1
+
+def objective(x):
+  return x[-1]
+
+def objective_grad(x):
+  return [0,0,0,0,0,1]
+
+def get_fun(q, ps, i, j):
+  return lambda x: constraints_fun_ij(x, q, ps, i, j)
+
+def optimize(q, ps): # q is a silhouette of p
+# variables:
+# q: theta_q, phi_q
+# p: theta_p, phi_p, alpha
+
+# minimize t
+# t, alpha, theta_q, phi_q, theta_p, phi_p
+# st R * M * p is inside M * q
+
+  jac = '3-point'
+
+  constraints = []
+  datas = []
+  cons = []
+  ii = 0
+  for j in range(len(ps)):
+    for i in range(len(q)):
+      datas.append((i,j))
+      cons.append(get_fun(q, ps, i, j))
+      constr = {'type': 'ineq', 'fun': cons[-1]}
+      constraints.append(constr)
+      ii += 1
+
+  #x0 = [0.5, 0.5, 0.5, 0.5, 0.5, 10]
+
+  rng = np.random.default_rng(1338)
+  x0 = list(rng.random(6))
+  x0[-1] = 10
+
+  res = minimize(objective, x0, method='SLSQP', jac=objective_grad, constraints=constraints)
+  #constraints = [{'type':'ineq', 'fun': constr_test}]
+  #res = minimize(obj, x0, method='SLSQP', jac=obj_grad, constraints=constraints)
+  #for c in constraints:
+  #  print(str(c['fun'](r.x)))
+  return res, constraints
+
+def get_silhouettes(polyhedron):
+  n = 100
+  silhouettes = []
+  for i in range(n):
+    theta = (2 * math.pi * i) / n
+    for j in range(n):
+      phi_bar = -1 + 2 * j / (n - 1.0)
+      phi = math.acos(phi_bar)
+      points_2d = project_to_plane(polyhedron, theta, phi)
+      hull = ConvexHull(points_2d)
+      vertices = list(hull._vertices)
+      min_vertex = min(vertices)
+      min_index = vertices.index(min_vertex)
+      vertices = vertices[min_index:] + vertices[:min_index]
+      silhouettes.append(tuple(vertices))
+
+  return sorted(list(set(silhouettes)))
+
+  
 
 def run():
-  c = random(20)
-  c = icosahedron()
-  c = truncated_tetrahedron()
-  c = truncated_cube()
-  c = tetrahedron()
-  c = truncated_octahedron()
-  c = snub_cube()
-  c = rombicosidodecahedron()
-  c = truncated_icosahedron()
-  c = truncated_dodecahedron()
-  c = cube()
-  c = dodecahedron()
+  q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
+  p = cube()
 
-  c = icosidodecahedron()
-  c = truncated_icosidodecahedron()
-  c = truncated_cuboctahedron()
-  c = truncated_icosidodecahedron()
+  p = truncated_dodecahedron()
+  silhouettes = get_silhouettes(p)
+  ii = 0
+  any_contains = False
+  for s in silhouettes:
+    q = [p[i] for i in s]
+    r, constraints = optimize(q, p)
+    theta_q, phi_q, theta_p, phi_p, alpha, t = r.x
 
-  c = snub_cube() # no found for n = 101
-  c = rhombicosidodecahedron()
-  #c = snub_dodecahedron()
-
-  c = rhombicuboctahedron()
-
-  n = 11
-  t = time.time()
-  q, p, max_scaling = search_sphere(c, n)
-  #q, p, max_scaling = search_around_point(c, n, [1.1967972013675, 0.1], [0.299199300341, -1.0], 1e-2)
-  #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
-
-  if False:
-    test_single(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
-    test_single(dodecahedron(), [4.91885536, -0.4651241815], [0.85533109966, -0.51181376779]) # 1.010822219108
-    test_single(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
-    test_single(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
-    test_single(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
-    test_single(cuboctahedron(),[0.785398161, -0.57830026], [0.61548018768, 1.3864235e-17]) # 1.0146117
-    test_single(cuboctahedron(),[0.78524668297487, 0.577357842844], [0, 0.81649658429]) # 1.01461186 optimized
-    test_single(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
-    test_single(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
-    test_single(rhombicuboctahedron(),[0.6217515917199, -0.143038708666], [1.05994735488, -1.0]) # 1.0128198
-    test_single(truncated_cuboctahedron(),[1.1981691280, 0.110749025], [0.300367566, -1.0]) #  1.0065959588
-    # snub cube
-    test_single(icosidodecahedron(), [0.545453368289, 0.0001048230], [4.586745414, -0.3066122]) # 1.0008836
-    test_single(icosidodecahedron(), [3.14162126472, -0.850624425715], [0.49306421127, 0.918361892]) # 1.0008854 optimized
-    test_single(truncated_dodecahedron(), [5.707191649, 0.0983882599999], [0.7683968876898, -0.5922993299999]) # 1.00161296
-    test_single(truncated_icosahedron(), [1.32258347578, -0.0012256209999], [0.862237455, -0.835966629666]) # 1.0019614
-    # rhombicosidodecahedron
-    test_single(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
-    # snub dodecahedron
-
-
-  if True and q and p:
-    grid = 1
-    n = 11
-    best_q, best_p = q, p
-    while grid > 1e-8:
-      grid *= 0.1
-      improvement = True
-      print('grid: %s' % grid)
-      while improvement:
-        [q, p, max_scaling2] = search_around_point(c, n, [best_q.theta, best_q.phi_bar], [best_p.theta, best_p.phi_bar], grid)
-        improvement = max_scaling2 > max_scaling
-        if improvement:
-          max_scaling = max_scaling2
-          best_q, best_p = q, p
-
-  d = time.time() - t
-  print('Time: %s' % d)
-
-
-
-if False:
-  plt.plot(points[:,0], points[:,1], 'o')
-  for simplex in hull.simplices:
-    plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
-
-  plt.show()
+    print(str(ii) + ' of ' + str(len(silhouettes)) + (' * ' if any_contains else ' '), end='')
+    contains = test_single(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+    any_contains = any_contains or contains
+    ii += 1
+  return r, constraints
