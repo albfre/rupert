@@ -4,6 +4,41 @@ import math
 
 golden_ratio = (1.0 + math.sqrt(5)) / 2
 
+def read_file(f):
+  print('Reading ' + str(f))
+  lines = [l for l in open(f).readlines() if len(l) > 0]
+  name = lines[0]
+  constants = {}
+  for line in lines:
+    if line[0] == 'C':
+      cn = line[0:line.index('=')].strip()
+      l2 = line[line.index('=')+1:]
+      if cn in constants:
+        continue
+      if '=' in l2:
+        cv = float(l2[:l2.index('=')].strip())
+      else:
+        cv = float(l2.strip())
+      constants[cn] = cv
+
+  points = []
+  for line in lines:
+    if line[0] == 'V':
+      p = []
+      values = line[line.index('=')+1:].replace('(', '').replace(')','')
+      values = values.split(',')
+      for v in values:
+        v = v.strip()
+        if v[0] == 'C':
+          p.append(constants[v])
+        elif v[0] == '-' and v[1] == 'C':
+          p.append(-constants[v[1:]])
+        else:
+          p.append(float(v))
+      points.append(p)
+  return name, points
+
+
 def random_polytope(n):
   rng = np.random.default_rng(1338)
   points = rng.random((n, 3))

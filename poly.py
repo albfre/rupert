@@ -110,14 +110,14 @@ def search_around_point(polyhedron, n, q_angles, p_angles, grid_size):
 
 
 def run():
-  c = random(20)
+  c = random_polytope(20)
   c = icosahedron()
   c = truncated_tetrahedron()
   c = truncated_cube()
   c = tetrahedron()
   c = truncated_octahedron()
   c = snub_cube()
-  c = rombicosidodecahedron()
+  c = rhombicosidodecahedron()
   c = truncated_icosahedron()
   c = truncated_dodecahedron()
   c = cube()
@@ -133,11 +133,13 @@ def run():
   #c = snub_dodecahedron()
 
   c = rhombicuboctahedron()
+  c = read_file('Catalan/01TriakisTetrahedron.txt')[1]
+  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
 
   n = 11
   t = time.time()
   q, p, max_scaling = search_sphere(c, n)
-  #q, p, max_scaling = search_around_point(c, n, [1.1967972013675, 0.1], [0.299199300341, -1.0], 1e-2)
+  #q, p, max_scaling = search_around_point(c, n, [1.385019327669107, 0.0333840201675], [1.6311173271433788, -0.3621786324609036], 1e-1)
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
 
   if False:
@@ -160,6 +162,11 @@ def run():
     # rhombicosidodecahedron
     test_containment(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
     # snub dodecahedron
+
+
+    # New results:
+    test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [0.7733307863055, -0.01883940319377973], [6.275432212599668, -0.6802734306138366]) # 1.0000033 optimize
+    test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
 
 
   if True and q and p:
