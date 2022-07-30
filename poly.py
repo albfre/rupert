@@ -6,241 +6,9 @@ import itertools
 import time
 from multiprocessing import Pool
 from functools import partial
-
-golden_ratio = (1.0 + math.sqrt(5.0)) / 2.0
-
-def hyperplanes_to_dual_points(equations):
-  return [[x/equation[-1] for x in equation[:-1]] for equation in equations]
-
-def hyperplanes_to_vertices(equations):
-  for i, equation in enumerate(equations):
-    if equation[-1] <= 0.0:
-      print('Error in equation %s: %s' % (i, equation))
-      assert(equation[-1] > 0.0)
-
-  dual_points = hyperplanes_to_dual_points(equations)
-  dual_hull = ConvexHull(dual_points)
-  primal_points = hyperplanes_to_dual_points(dual_hull.equations)
-  return primal_points
-
-def project_to_plane(points, theta, phi):
-  assert(all(len(p) == 3 for p in points))
-  st = math.sin(theta)
-  ct = math.cos(theta)
-  sp = math.sin(phi)
-  cp = math.cos(phi)
-  return [[-st * p[0] + ct * p[1], -ct * cp * p[0] - st * cp * p[1] + sp * p[2]] for p in points]
-
-def random(n):
-  rng = np.random.default_rng(1338)
-  points = rng.random((n, 3))
-  points = [[p[0]-0.5, p[1]-0.5, p[2]-0.5] for p in points]
-  return points
-
-def even_permutation(point):
-  assert(len(point) == 3)
-  permutation_points = []
-  for i in range(len(point)):
-    p = point[i:] + point[:i]
-    permutation_points.append(list(p))
-  return permutation_points
-
-def even_permutations(points):
-  permutation_points = []
-  for p in points:
-    permutation_points += even_permutation(p)
-  return sorted(permutation_points)
-
-def odd_permutation(point):
-  assert(len(point) == 3)
-  all_permutations = [list(p) for p in itertools.permutations(point)]
-  return sorted([p for p in all_permutations if p not in even_permutation(point)])
-
-def odd_permutations(points):
-  permutation_points = []
-  for p in points:
-    permutation_points += odd_permutation(p)
-  return sorted(permutation_points)
-
-def all_permutations(points):
-  permutation_points = []
-  for p in points:
-    permutation_points += itertools.permutations(p)
-  return [list(p) for p in sorted(list(set(permutation_points)))]
-
-def has_even_number_of_minus_signs(p):
-  return sum(1 for r in p if r < 0.0) % 2 == 0
-
-def has_odd_number_of_minus_signs(p):
-  return sum(1 for r in p if r < 0.0) % 2 == 1
-
-def tetrahedron():
-  return [[-1,-1,1],[-1,1,-1],[1,-1,-1],[1,1,1]]
-
-def cube():
-  return list(itertools.product((-1,1), (-1,1), (-1,1)))
-
-def octahedron():
-  return all_permutations(list(itertools.product((0,),(0,),(-1,1))))
-
-def dodecahedron():
-  r = list(itertools.product((-1,1), (-1,1), (-1,1)))
-  r += even_permutations(list(itertools.product((0,), (-1/golden_ratio,1/golden_ratio), (-golden_ratio,golden_ratio))))
-  return r
-
-def icosahedron():
-  return even_permutations(list(itertools.product((0,),(-1,1),(-golden_ratio,golden_ratio))))
-
-def truncated_tetrahedron():
-  return [p for p in all_permutations(list(itertools.product((-1,1),(-1,1),(-3,3)))) if has_even_number_of_minus_signs(p)]
-
-def cuboctahedron():
-  return all_permutations(list(itertools.product((-1,1),(-1,1),(0,))))
-
-def truncated_cube():
-  p = math.sqrt(2.0) - 1.0
-  return all_permutations(list(itertools.product((-1,1),(-1,1),(-p,p))))
-  
-def truncated_octahedron():
-  return all_permutations(list(itertools.product((0,),(-1,1),(-2,2))))
-
-def rhombicuboctahedron():
-  p = math.sqrt(2.0) + 1.0
-  return all_permutations(list(itertools.product((-1,1),(-1,1),(-p,p))))
-
-def truncated_cuboctahedron():
-  p = math.sqrt(2.0)
-  return all_permutations(list(itertools.product((-1,1),(-(1+p),1+p),(-(1+2*p),1+2*p))))
-  
-def snub_cube():
-  t = 1.839286755214161132551851564
-  r = []
-  r += [p for p in even_permutations(list(itertools.product((-1,1),(-1/t,1/t),(-t,t)))) if has_odd_number_of_minus_signs(p)]
-  r += [p for p in odd_permutations(list(itertools.product((-1,1),(-1/t,1/t),(-t,t)))) if has_even_number_of_minus_signs(p)]
-  return r
-
-def icosidodecahedron():
-  r = []
-  r += all_permutations(list(itertools.product((0,),(0,),(-golden_ratio,golden_ratio))))
-  r += even_permutations(list(itertools.product((-0.5,0.5),(-golden_ratio/2,golden_ratio/2),(-golden_ratio**2/2,golden_ratio**2/2))))
-  return r
-
-def truncated_dodecahedron():
-  r = []
-  r += even_permutations(list(itertools.product((0,),(-1/golden_ratio,1/golden_ratio),(-(2+golden_ratio),2+golden_ratio))))
-  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio),(-golden_ratio,golden_ratio),(-2*golden_ratio,2*golden_ratio))))
-  r += even_permutations(list(itertools.product((-golden_ratio,golden_ratio),(-2,2),(-(golden_ratio+1),golden_ratio+1))))
-  return r
-
-def truncated_icosahedron():
-  g = (1 + math.sqrt(5))/2.0
-  r = []
-  r += odd_permutations(list(itertools.product((0,), (-1,1), (-3*g, 3*g))))
-  r += odd_permutations(list(itertools.product((-1,1), (-(2+g), 2+g), (-2*g, 2*g))))
-  r += odd_permutations(list(itertools.product((-g, g), (-2,2), (-(2*g+1), 2*g+1))))
-  return r
-
-def rhombicosidodecahedron():
-  r = []
-  r += even_permutations(list(itertools.product((-1,1), (-1,1), (-golden_ratio**3, golden_ratio**3))))
-  r += even_permutations(list(itertools.product((-golden_ratio**2,golden_ratio**2), (-golden_ratio,golden_ratio), (-2*golden_ratio, 2*golden_ratio))))
-  r += even_permutations(list(itertools.product((-(2+golden_ratio),2+golden_ratio), (0,), (-golden_ratio**2, golden_ratio**2))))
-  return r
-
-def truncated_icosidodecahedron():
-  r = []
-  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio), (-1/golden_ratio,1/golden_ratio), (-(3+golden_ratio), 3+golden_ratio))))
-  r += even_permutations(list(itertools.product((-2/golden_ratio,2/golden_ratio), (-golden_ratio,golden_ratio), (-(1+2*golden_ratio), 1+2*golden_ratio))))
-  r += even_permutations(list(itertools.product((-1/golden_ratio,1/golden_ratio), (-golden_ratio**2,golden_ratio**2), (-(-1+3*golden_ratio), -1+3*golden_ratio))))
-  r += even_permutations(list(itertools.product((-(2*golden_ratio-1),2*golden_ratio-1), (-2,2), (-(2+golden_ratio), 2+golden_ratio))))
-  r += even_permutations(list(itertools.product((-golden_ratio,golden_ratio), (-3,3), (-2*golden_ratio, 2*golden_ratio))))
-  return r
-
-
-def plot(points, hull):
-  plt.plot(points[:,0], points[:,1], 'o')
-  for simplex in hull.simplices:
-    plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
-
-  plt.show()
-
-def distance(p1, p2):
-  return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))
-
-def diameter(points):
-  max_distance = 0.0
-  for i, p1 in enumerate(points):
-    for j in range(i + 1, len(points)):
-      p2 = points[j]
-      max_distance = max(max_distance, distance(p1, p2))
-  return max_distance
-
-def area(points):
-  n = len(points)
-  c = [sum(p[0] for p in points) / n, sum(p[1] for p in points) / n]
-  area = 0.0
-  for i in range(n):
-    a = points[i]
-    b = points[i + 1 if i + 1 < n else 0]
-    area += abs(a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])) / 2.0
-  return area
-
-def box(points):
-  min_point = list(points[0])
-  max_point = list(points[0])
-  for p in points:
-    for i in range(len(p)):
-      min_point[i] = min(min_point[i], p[i] - 1e-9)
-      max_point[i] = max(max_point[i], p[i] + 1e-9)
-  return [min_point, max_point, [min_point[0], max_point[1]], [max_point[0], min_point[1]]]
-
-class Polygon:
-  def __init__(self, points, theta, phi, phi_bar):
-    assert(all(len(p) == 2 for p in points))
-    self.points = points
-    self.theta = theta
-    self.phi = phi
-    self.phi_bar = phi_bar
-
-    self.hull = ConvexHull(points)
-
-    self.vertex_points = [points[i] for i in self.hull.vertices]
-    self.perimeter = sum(distance(points[simplex[0]], points[simplex[1]]) for simplex in self.hull.simplices)
-    self.diameter = diameter(self.vertex_points)
-    self.area = area(self.vertex_points)
-    self.box = None if len(self.vertex_points) <= 16 else Polygon(box(self.vertex_points), theta, phi, phi_bar)
-    self.largest_vertex = None
-
-  def compute_largest_scaling(self, other):
-    equations = [] # Lij
-    for a, b, offset in self.hull.equations: # j
-      assert(abs(offset) > 1e-9)
-      for x, y in other.vertex_points: # i
-        equations.append([(a * x + b * y) / offset, (-a * y + b * x) / offset, a / offset, b / offset, 1.0])
-
-    vertices = hyperplanes_to_vertices(equations)
-
-    largest_scaling_squared = 0.0 #max(v[0]**2 + v[1]**2 for v in vertices)
-    for vertex in vertices:
-      scaling_squared = vertex[0]**2 + vertex[1]**2
-      if scaling_squared > largest_scaling_squared:
-        self.largest_vertex = vertex
-        largest_scaling_squared = scaling_squared
-
-    return math.sqrt(largest_scaling_squared)
-
-  def contains(self, other):
-    test = [self.perimeter < other.perimeter, self.diameter < other.diameter, self.area < other.area, False]
-    if self.perimeter < other.perimeter: return False, 0.0, test
-    if self.diameter < other.diameter: return False, 0.0, test
-    if self.area < other.area: return False, 0.0, test
-
-    if self.box and not self.box.contains(other):
-      test[3] = True
-      return False, 0.0, test
-
-    largest_scaling = self.compute_largest_scaling(other) 
-    return largest_scaling > 1.0 + 1e-14, largest_scaling, test
+from polytopes import *
+from polygon import *
+from projection import *
 
 def brute_force_inner(q, p):
   best_q, best_p = None, None
@@ -340,21 +108,6 @@ def search_around_point(polyhedron, n, q_angles, p_angles, grid_size):
       theta = (2 * math.pi * i) / n
   return bruteforce(q_polygons, p_polygons)
 
-def test_single(polyhedron, q_angles, p_angles):
-  theta_q, phi_bar_q = q_angles
-  theta_p, phi_bar_p = p_angles
-  phi_q = math.acos(phi_bar_q)
-  phi_p = math.acos(phi_bar_p)
-
-  points_q = project_to_plane(polyhedron, theta_q, phi_q)
-  points_p = project_to_plane(polyhedron, theta_p, phi_p)
-  p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
-  p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
-  contains, largest_scaling, test = p1.contains(p2)
-  if contains:
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
-  else:
-    print('No containment')
 
 def run():
   c = random(20)
@@ -388,24 +141,24 @@ def run():
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
 
   if False:
-    test_single(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
-    test_single(dodecahedron(), [4.91885536, -0.4651241815], [0.85533109966, -0.51181376779]) # 1.010822219108
-    test_single(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
-    test_single(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
-    test_single(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
-    test_single(cuboctahedron(),[0.785398161, -0.57830026], [0.61548018768, 1.3864235e-17]) # 1.0146117
-    test_single(cuboctahedron(),[0.78524668297487, 0.577357842844], [0, 0.81649658429]) # 1.01461186 optimized
-    test_single(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
-    test_single(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
-    test_single(rhombicuboctahedron(),[0.6217515917199, -0.143038708666], [1.05994735488, -1.0]) # 1.0128198
-    test_single(truncated_cuboctahedron(),[1.1981691280, 0.110749025], [0.300367566, -1.0]) #  1.0065959588
+    test_containment(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
+    test_containment(dodecahedron(), [4.91885536, -0.4651241815], [0.85533109966, -0.51181376779]) # 1.010822219108
+    test_containment(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
+    test_containment(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
+    test_containment(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
+    test_containment(cuboctahedron(),[0.785398161, -0.57830026], [0.61548018768, 1.3864235e-17]) # 1.0146117
+    test_containment(cuboctahedron(),[0.78524668297487, 0.577357842844], [0, 0.81649658429]) # 1.01461186 optimized
+    test_containment(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
+    test_containment(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
+    test_containment(rhombicuboctahedron(),[0.6217515917199, -0.143038708666], [1.05994735488, -1.0]) # 1.0128198
+    test_containment(truncated_cuboctahedron(),[1.1981691280, 0.110749025], [0.300367566, -1.0]) #  1.0065959588
     # snub cube
-    test_single(icosidodecahedron(), [0.545453368289, 0.0001048230], [4.586745414, -0.3066122]) # 1.0008836
-    test_single(icosidodecahedron(), [3.14162126472, -0.850624425715], [0.49306421127, 0.918361892]) # 1.0008854 optimized
-    test_single(truncated_dodecahedron(), [5.707191649, 0.0983882599999], [0.7683968876898, -0.5922993299999]) # 1.00161296
-    test_single(truncated_icosahedron(), [1.32258347578, -0.0012256209999], [0.862237455, -0.835966629666]) # 1.0019614
+    test_containment(icosidodecahedron(), [0.545453368289, 0.0001048230], [4.586745414, -0.3066122]) # 1.0008836
+    test_containment(icosidodecahedron(), [3.14162126472, -0.850624425715], [0.49306421127, 0.918361892]) # 1.0008854 optimized
+    test_containment(truncated_dodecahedron(), [5.707191649, 0.0983882599999], [0.7683968876898, -0.5922993299999]) # 1.00161296
+    test_containment(truncated_icosahedron(), [1.32258347578, -0.0012256209999], [0.862237455, -0.835966629666]) # 1.0019614
     # rhombicosidodecahedron
-    test_single(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
+    test_containment(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
     # snub dodecahedron
 
 
