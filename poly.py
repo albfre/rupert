@@ -135,11 +135,17 @@ def run():
   c = rhombicuboctahedron()
   c = read_file('Catalan/01TriakisTetrahedron.txt')[1]
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
-
+  qa = [1.39437813, math.cos(0.037334784167499)]
+  pa = [1.6361904311, math.cos(-0.37044476646)]
+  qa = [4.6290895915288, 0.078712875009]
+  pa = [5.8170826169, -0.102959535816]
+  c = snub_cube()
   n = 11
   t = time.time()
-  q, p, max_scaling = search_sphere(c, n)
-  #q, p, max_scaling = search_around_point(c, n, [1.385019327669107, 0.0333840201675], [1.6311173271433788, -0.3621786324609036], 1e-1)
+  pa = [4.62855249619, 0.078693308675666]
+  qa = [5.817518733566667, -0.102768517482666]
+  #q, p, max_scaling = search_sphere(c, n)
+  q, p, max_scaling = search_around_point(c, 51, qa, pa, 1e-3)
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
 
   if False:
@@ -167,6 +173,15 @@ def run():
     # New results:
     test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [0.7733307863055, -0.01883940319377973], [6.275432212599668, -0.6802734306138366]) # 1.0000033 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
+    test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.6290895915288, 0.078712875009], [5.8170826169, -0.102959535816]) # 1.0004299 optimize
+    test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.62855249619, 0.078693308675666], [5.817518733566667, -0.102768517482666]) # 1.000435 optimize
+
+
+    test_containment(read_file('Johnson/GyroelongatedPentagonalRotunda.txt')[1], [1.5697500508, 0.516259456], [3.44208101, -0.1893870555]) # J25 1.0000894999 optimize
+    test_containment(read_file('Johnson/GyroelongatedSquareBicupola.txt')[1], [4.71940540634669, -0.57234816598], [3.148896509339, 0.002509670578455]) # J45 1.00000956 optimize
+    test_containment(read_file('Johnson/GyroelongatedPentagonalCupolarotunda.txt')[1], [3.4528520562794, -0.42733970469], [3.4424819869, -0.19547975499]) # J47 1.00008028 optimize
+    test_containment(read_file('Johnson/TriaugmentedTruncatedDodecahedron.txt')[1], [3.41783398253844, -0.9152295760], [0.789632179442, -0.00051359417]) # J71 1.000598658
+
 
 
   if True and q and p:
