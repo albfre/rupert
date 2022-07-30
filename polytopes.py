@@ -123,10 +123,10 @@ def truncated_cuboctahedron():
   return all_permutations(plus_minus_iter([1, 1 + p, 1 + 2 * p]))
   
 def snub_cube():
-  t = 1.839286755214161132551851564
+  t = 1.83928675521416113255185256465328
   r = []
   r += [p for p in even_permutations(plus_minus_iter([1, 1 / t, t])) if has_odd_number_of_minus_signs(p)]
-  r += [p for p in even_permutations(plus_minus_iter([1, 1 / t, t])) if has_even_number_of_minus_signs(p)]
+  r += [p for p in odd_permutations(plus_minus_iter([1, 1 / t, t])) if has_even_number_of_minus_signs(p)]
   return r
 
 def icosidodecahedron():

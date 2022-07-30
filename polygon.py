@@ -47,7 +47,7 @@ def test_containment(polyhedron, q_angles, p_angles):
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
   else:
     print('No containment')
-  return contains
+  return contains, largest_scaling
 
 class Polygon:
   def __init__(self, points, theta, phi, phi_bar):

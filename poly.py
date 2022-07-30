@@ -145,8 +145,10 @@ def run():
   pa = [4.62855249619, 0.078693308675666]
   qa = [5.817518733566667, -0.102768517482666]
   #q, p, max_scaling = search_sphere(c, n)
-  q, p, max_scaling = search_around_point(c, 51, qa, pa, 1e-3)
+  #q, p, max_scaling = search_around_point(c, 51, qa, pa, 1e-3)
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
+
+  test_containment(snub_cube(), [0.055726718395558206, -0.4999974246334165], [3.090528105136888, 0.7408556305019884]) # 1.001084489 optimize
 
   if False:
     test_containment(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
@@ -171,12 +173,15 @@ def run():
 
 
     # New results:
+
+    # Catalan 2
     test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [0.7733307863055, -0.01883940319377973], [6.275432212599668, -0.6802734306138366]) # 1.0000033 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.6290895915288, 0.078712875009], [5.8170826169, -0.102959535816]) # 1.0004299 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.62855249619, 0.078693308675666], [5.817518733566667, -0.102768517482666]) # 1.000435 optimize
 
 
+    # Johnson 4
     test_containment(read_file('Johnson/GyroelongatedPentagonalRotunda.txt')[1], [1.5697500508, 0.516259456], [3.44208101, -0.1893870555]) # J25 1.0000894999 optimize
     test_containment(read_file('Johnson/GyroelongatedSquareBicupola.txt')[1], [4.71940540634669, -0.57234816598], [3.148896509339, 0.002509670578455]) # J45 1.00000956 optimize
     test_containment(read_file('Johnson/GyroelongatedPentagonalCupolarotunda.txt')[1], [3.4528520562794, -0.42733970469], [3.4424819869, -0.19547975499]) # J47 1.00008028 optimize
