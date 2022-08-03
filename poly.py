@@ -134,21 +134,20 @@ def run():
 
   c = rhombicuboctahedron()
   c = read_file('Catalan/01TriakisTetrahedron.txt')[1]
-  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
+  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1] # no found for 31
+
   qa = [1.39437813, math.cos(0.037334784167499)]
   pa = [1.6361904311, math.cos(-0.37044476646)]
   qa = [4.6290895915288, 0.078712875009]
   pa = [5.8170826169, -0.102959535816]
-  c = snub_cube()
-  n = 11
+  #c = snub_cube()
+  n = 41
   t = time.time()
   pa = [4.62855249619, 0.078693308675666]
   qa = [5.817518733566667, -0.102768517482666]
-  #q, p, max_scaling = search_sphere(c, n)
+  q, p, max_scaling = search_sphere(c, n)
   #q, p, max_scaling = search_around_point(c, 51, qa, pa, 1e-3)
   #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
-
-  test_containment(snub_cube(), [0.055726718395558206, -0.4999974246334165], [3.090528105136888, 0.7408556305019884]) # 1.001084489 optimize
 
   if False:
     test_containment(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373

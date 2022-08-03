@@ -65,13 +65,24 @@ class Polygon:
     self.area = area(self.vertex_points)
     self.box = None if len(self.vertex_points) <= 16 else Polygon(box(self.vertex_points), theta, phi, phi_bar)
     self.largest_vertex = None
+    self.is_centrally_symmetric = True
+
+    if True:
+      for point in self.vertex_points:
+        minus_point = [-point[0], -point[1]]
+        if not any(distance(minus_point, p) < 1e-5 for p in self.vertex_points):
+          self.is_centrally_symmetric = False
+          break
 
   def compute_largest_scaling(self, other):
     equations = [] # Lij
     for a, b, offset in self.hull.equations: # j
       assert(abs(offset) > 1e-9)
       for x, y in other.vertex_points: # i
-        equations.append([(a * x + b * y) / offset, (-a * y + b * x) / offset, a / offset, b / offset, 1.0])
+        if self.is_centrally_symmetric and other.is_centrally_symmetric:
+          equations.append([(a * x + b * y) / offset, (-a * y + b * x) / offset, 1.0])
+        else:
+          equations.append([(a * x + b * y) / offset, (-a * y + b * x) / offset, a / offset, b / offset, 1.0])
 
     vertices = hyperplanes_to_vertices(equations)
 
@@ -95,4 +106,4 @@ class Polygon:
       return False, 0.0, test
 
     largest_scaling = self.compute_largest_scaling(other) 
-    return largest_scaling > 1.0 + 1e-16, largest_scaling, test
+    return largest_scaling > 1.0 + 1e-14, largest_scaling, test
