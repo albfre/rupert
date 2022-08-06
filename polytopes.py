@@ -38,6 +38,9 @@ def read_file(f):
   return name, points
 
 
+def pentagonal_icositetrahedron():
+  return read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
+
 def random_polytope(n):
   rng = np.random.default_rng(1338)
   points = rng.random((n, 3))

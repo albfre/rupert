@@ -130,7 +130,7 @@ def get_silhouette(polyhedron, theta, phi):
 
 
 def get_silhouettes(polyhedron):
-  n = 400
+  n = 100
   silhouettes = []
   for i in range(n):
     theta = (2 * math.pi * i) / n
@@ -159,6 +159,7 @@ def run():
   p = cube()
 
   p = dodecahedron()
+  p = snub_cube()
   silhouettes = get_silhouettes(p)
   any_contains = False
   for rni in range(1):

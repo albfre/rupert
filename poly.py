@@ -135,28 +135,37 @@ def run():
   c = rhombicuboctahedron()
   c = read_file('Catalan/01TriakisTetrahedron.txt')[1]
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1] # no found for 31
+  c = read_file('Catalan/11DeltoidalHexecontahedron.txt')[1] # no found for 31
 
   qa = [1.39437813, math.cos(0.037334784167499)]
   pa = [1.6361904311, math.cos(-0.37044476646)]
   qa = [4.6290895915288, 0.078712875009]
   pa = [5.8170826169, -0.102959535816]
   #c = snub_cube()
-  n = 41
+  #c = icosahedron()
+  n = 11
   t = time.time()
-  pa = [4.62855249619, 0.078693308675666]
-  qa = [5.817518733566667, -0.102768517482666]
-  q, p, max_scaling = search_sphere(c, n)
-  #q, p, max_scaling = search_around_point(c, 51, qa, pa, 1e-3)
-  #q, p, max_scaling = search_around_point(truncated_icosahedron, n, [0.0023, -0.2542333], [0.32158333, -0.5797303], 1e-2)
+  qa = [2.40587132115149, 0.649014357100288]
+  pa =[5.071119649324, -8.998662569e-5]
+  #q, p, max_scaling = search_sphere(c, n)
+  #q, p, max_scaling = search_around_point(c, n, qa, pa, 1e-2)
+  #test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.33016097570079, -0.99341718840389], [0.4660300161899, 0.10294384746147]) # 1.0004360589 optimize
+  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
+  c = truncated_tetrahedron()
+  q, p, max_scaling = search_around_point(c, n,[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781], 1e-2)
+
 
   if False:
     test_containment(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
     test_containment(dodecahedron(), [4.91885536, -0.4651241815], [0.85533109966, -0.51181376779]) # 1.010822219108
+    test_containment(dodecahedron(), [1.36160559797788, -0.46482655871177], [1.156502150183, 0.085113752906999]) # 1.010823049 optimize
+    test_containment(dodecahedron(), [4.04107525e-5, -0.936244596507], [4.978785388, 6.250557e-6]) # 1.0108230584 optimize
     test_containment(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
     test_containment(icosahedron(), [0.73701686138, -0.64815309888], [0, -0.352054176666]) # 1.010822219108 #1.01082280359
+    test_containment(icosahedron(), [3.141512786522, -0.96473442820078], [4.0007268347447, 0.113633523624]) # 1.01823059660375 optimize
     test_containment(truncated_tetrahedron(),[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781]) # 1.014255728
     test_containment(cuboctahedron(),[0.785398161, -0.57830026], [0.61548018768, 1.3864235e-17]) # 1.0146117
-    test_containment(cuboctahedron(),[0.78524668297487, 0.577357842844], [0, 0.81649658429]) # 1.01461186 optimized
+    test_containment(cuboctahedron(),[3.92677932, 2.18621798], [1.57079628, 2.18627605]) # 1.014611869 optimized
     test_containment(truncated_cube(),[0.785398165, -0.372140328948], [0.76768607073, -1.0]) # 1.0306624
     test_containment(truncated_octahedron(),[2.815909397, 0.30473783], [4.712388979, 0.70710678]) # 1.014611
     test_containment(rhombicuboctahedron(),[0.6217515917199, -0.143038708666], [1.05994735488, -1.0]) # 1.0128198
@@ -166,8 +175,10 @@ def run():
     test_containment(icosidodecahedron(), [3.14162126472, -0.850624425715], [0.49306421127, 0.918361892]) # 1.0008854 optimized
     test_containment(truncated_dodecahedron(), [5.707191649, 0.0983882599999], [0.7683968876898, -0.5922993299999]) # 1.00161296
     test_containment(truncated_icosahedron(), [1.32258347578, -0.0012256209999], [0.862237455, -0.835966629666]) # 1.0019614
+    test_containment(truncated_icosahedron(), [4.47014696700, 0.00010903827667], [0.00015202332, -0.995124696736]) # 1.00196517 optimize
     # rhombicosidodecahedron
     test_containment(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
+    test_containment(truncated_icosidodecahedron(), [2.36509185, -0.97004261197], [3.64351629088, 1.0]) # 1.00206596 optimize
     # snub dodecahedron
 
 
@@ -175,9 +186,12 @@ def run():
 
     # Catalan 2
     test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [0.7733307863055, -0.01883940319377973], [6.275432212599668, -0.6802734306138366]) # 1.0000033 optimize
+    test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [1.5481073506, -0.7070753966], [-5.4925848298e-5, 0.684240926299]) # 1.0000040769 NM optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.6290895915288, 0.078712875009], [5.8170826169, -0.102959535816]) # 1.0004299 optimize
     test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [4.62855249619, 0.078693308675666], [5.817518733566667, -0.102768517482666]) # 1.000435 optimize
+    test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.33016097570079, -0.99341718840389], [0.4660300161899, 0.10294384746147]) # 1.0004360589 optimize
+    test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301604560341245, -0.9934171137372232], [0.466028785523233, 0.10294473679480336]) # 1.0004360874 optimize
 
 
     # Johnson 4

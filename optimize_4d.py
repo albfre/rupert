@@ -22,8 +22,8 @@ def objective(x, qs, ps):
   points_q = project_to_plane(qs, theta_q, phi_q)
   points_p = project_to_plane(ps, theta_p, phi_p)
 
-  p = Polygon(points_p, theta_p, phi_p, phi_bar_p)
   q = Polygon(points_q, theta_q, phi_q, phi_bar_q)
+  p = Polygon(points_p, theta_p, phi_p, phi_bar_p)
   s = q.compute_largest_scaling(p)
   #print(str(s))
   return -s**2
@@ -48,8 +48,15 @@ def optimize(q, ps, seed=1338, x0=None): # q is a silhouette of p
   if not x0:
     x0 = list(rng.random(4))
 
-  res = minimize(get_obj(q, ps), x0, method='SLSQP', jac=jac, constraints=constraints)
+  res = minimize(get_obj(q, ps), x0, method='Nelder-Mead', jac=jac, constraints=constraints)
   return res
+
+def get_dual():
+  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
+  return dual_polytope(c)
+
+def get_snub_cube_dual():
+  return dual_polytope(snub_cube())
 
 def test_dual():
   c = snub_cube()
@@ -62,6 +69,8 @@ def test_dual():
 
   qa = [4.62855249619, 0.078693308675666]
   pa =[5.817518733566667, -0.102768517482666]
+  qa = [2.3301604560341245, -0.9934171137372232]
+  pa = [0.466028785523233, 0.10294473679480336]
 
   dual = dual_polytope(c)
   
@@ -121,6 +130,11 @@ def run_improve(p=None, n=1):
     for angle1 in angles1:
       for angle2 in angles1:
         angles.append((angle1[0], angle1[1], angle2[0], angle2[1]))
+
+    qa = [4.62855249619, math.acos(0.078693308675666)]
+    pa =[5.817518733566667, math.acos(-0.102768517482666)]
+    angles.append((pa[0], pa[1], qa[0], qa[1]))
+    angles.append((qa[0], qa[1], pa[0], pa[1]))
   else:
     angles = []
     for i in range(n):
@@ -135,12 +149,15 @@ def run_improve(p=None, n=1):
   n_tests = len(angles)
   n_per_chunk = 16
   n_chunks = round(n_tests / n_per_chunk + 1)
+  largest_scaling = 0.0
   if True:
     with Pool() as pool:
       for chunk_i in range(n_chunks):
         begin_i = min(chunk_i * n_per_chunk, n_tests)
         end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
         #if end_i < 412624: continue # snub_cube
+        #if end_i < 25472: continue # snub_cube
+        #if end_i < 694400: continue # deltoidalhexecontahedron
 
         print(str(begin_i) + ' of ' + str(len(angles)) + '. ')
 
@@ -150,15 +167,16 @@ def run_improve(p=None, n=1):
 
         for r in result:
           theta_q, phi_q, theta_p, phi_p = r.x
-          contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
-          if contains:
-            print('contains')
-            if largest_scaling > best_scaling:
-              best_scaling = largest_scaling
-              best_r = r
-        print('Best scaling: %s' % best_scaling)
-
-
+          try:
+            contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+            if contains:
+              print('contains')
+              if largest_scaling > best_scaling:
+                best_scaling = largest_scaling
+                best_r = r
+          except:
+            print('Except')
+        print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
   else:
     for theta_q, phi_q, theta_p, phi_p in angles:
       print(str(i) + ' of ' + str(len(angles)) + '. ')
@@ -184,6 +202,9 @@ def run_improve(p=None, n=1):
 
   d = time.time() - t
   print('Time: %s' % d)
+  if best_r:
+    theta_q, phi_q, theta_p, phi_p = best_r.x
+    contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   return largest_scaling > 1.0, best_r
   
 
