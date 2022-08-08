@@ -150,9 +150,12 @@ def run():
   #q, p, max_scaling = search_sphere(c, n)
   #q, p, max_scaling = search_around_point(c, n, qa, pa, 1e-2)
   #test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.33016097570079, -0.99341718840389], [0.4660300161899, 0.10294384746147]) # 1.0004360589 optimize
+
+  test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301604560341245, -0.9934171137372232], [0.466028785523233, 0.10294473679480336]) # 1.0004360874 optimize
+
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
   c = truncated_tetrahedron()
-  q, p, max_scaling = search_around_point(c, n,[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781], 1e-2)
+  #q, p, max_scaling = search_around_point(c, n,[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781], 1e-2)
 
 
   if False:

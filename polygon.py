@@ -43,6 +43,7 @@ def test_containment(polyhedron, q_angles, p_angles):
   p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
   p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
   contains, largest_scaling, test = p1.contains(p2)
+  print(str(p1.hull.vertices))
   if contains:
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
   else:

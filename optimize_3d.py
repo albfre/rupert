@@ -11,26 +11,6 @@ from polytopes import *
 from polygon import *
 from projection import *
 
-def test_containment(polyhedron, q_angles, p_angles):
-  theta_q, phi_bar_q = q_angles
-  theta_p, phi_bar_p = p_angles
-  phi_q = math.acos(phi_bar_q)
-  phi_p = math.acos(phi_bar_p)
-
-  points_q = project_to_plane(polyhedron, theta_q, phi_q)
-  points_p = project_to_plane(polyhedron, theta_p, phi_p)
-  p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
-  p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
-  try:
-    contains, largest_scaling, test = p1.contains(p2)
-    if contains:
-      print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
-    else:
-      print('No containment')
-    return contains
-  except:
-    return False
-
 def constraints_fun(x, q_in, ps_in):
   assert(len(x) == 6)
   theta_q, phi_q, theta_p, phi_p, alpha, t = x
@@ -159,7 +139,7 @@ def run():
   p = cube()
 
   p = dodecahedron()
-  p = snub_cube()
+  p = cube()
   silhouettes = get_silhouettes(p)
   any_contains = False
   for rni in range(1):

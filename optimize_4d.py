@@ -96,6 +96,14 @@ def optimize_inner(q, p, seed, x0):
     print('Exception, continuing')
     return Result()
 
+def get_silhouette(polyhedron, theta, phi):
+  points_2d = project_to_plane(polyhedron, theta, phi)
+  hull = ConvexHull(points_2d)
+  vertices = list(hull._vertices)
+  min_vertex = min(vertices)
+  min_index = vertices.index(min_vertex)
+  vertices = vertices[min_index:] + vertices[:min_index]
+  return tuple(vertices)
 
 def run_improve(p=None, n=1):
   if p is None:
@@ -151,32 +159,40 @@ def run_improve(p=None, n=1):
   n_chunks = round(n_tests / n_per_chunk + 1)
   largest_scaling = 0.0
   if True:
-    with Pool() as pool:
-      for chunk_i in range(n_chunks):
-        begin_i = min(chunk_i * n_per_chunk, n_tests)
-        end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
-        #if end_i < 412624: continue # snub_cube
-        #if end_i < 25472: continue # snub_cube
-        #if end_i < 694400: continue # deltoidalhexecontahedron
 
-        print(str(begin_i) + ' of ' + str(len(angles)) + '. ')
+    if False:
+      silhouettes = get_silhouettes(p)
+    else:
+      silhouettes = [list(range(len(p)))]
+    for index, s in enumerate(silhouettes):
+      q = [p[i] for i in s]
 
-        if begin_i == end_i: continue
-        chunk_angles = angles[begin_i:end_i]
-        result = pool.map(partial(optimize_inner, q, p, 1338), chunk_angles)
+      with Pool() as pool:
+        for chunk_i in range(n_chunks):
+          begin_i = min(chunk_i * n_per_chunk, n_tests)
+          end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
+          #if end_i < 412624: continue # snub_cube
+          #if end_i < 25472: continue # snub_cube
+          #if end_i < 694400: continue # deltoidalhexecontahedron
 
-        for r in result:
-          theta_q, phi_q, theta_p, phi_p = r.x
-          try:
-            contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
-            if contains:
-              print('contains')
-              if largest_scaling > best_scaling:
-                best_scaling = largest_scaling
-                best_r = r
-          except:
-            print('Except')
-        print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
+          print(str(index) + '. ' + str(begin_i) + ' of ' + str(len(angles)) + '. ')
+
+          if begin_i == end_i: continue
+          chunk_angles = angles[begin_i:end_i]
+          result = pool.map(partial(optimize_inner, q, p, 1338), chunk_angles)
+
+          for r in result:
+            theta_q, phi_q, theta_p, phi_p = r.x
+            try:
+              contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+              if contains:
+                print('contains')
+                if largest_scaling > best_scaling:
+                  best_scaling = largest_scaling
+                  best_r = r
+            except:
+              print('Except')
+          print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
   else:
     for theta_q, phi_q, theta_p, phi_p in angles:
       print(str(i) + ' of ' + str(len(angles)) + '. ')
