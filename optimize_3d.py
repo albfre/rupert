@@ -44,6 +44,10 @@ def constraints_fun_ij(x, qs, ps, i, j):
   #print('C: %s, %s: %s' % (i,j,det))
   return t - det
 
+def containment_determinant(x, qs, ps, i, j):
+  (theta_q, phi_q, theta_p, phi_p, alpha, t) = x
+  return t - constraints_fun_ij(x, qs, ps, i, j)
+
 def obj(x):
   return sum(y**2 for y in x)
 
@@ -133,6 +137,23 @@ def run_improve():
   theta_q, phi_q, theta_p, phi_p, alpha, t = r.x
   contains = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   
+
+def run_silhouette():
+  p = cube()
+  silhouette_q = [2, 3, 7, 5, 4, 0]
+  silhouette_p = [6, 4, 0, 2]
+  q = [p[i] for i in silhouette_q]
+  ps = [p[i] for i in silhouette_p]
+  r, constraints = optimize(q, ps, 1338)
+  theta_q, phi_q, theta_p, phi_p, alpha, t = r.x
+  contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+  print(str(alpha))
+  print(str(trans))
+
+  for j in range(len(ps)):
+    for i in range(len(q)):
+      print(str(containment_determinant(r.x, q, ps, i, j)))
+   
 
 def run():
   q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]

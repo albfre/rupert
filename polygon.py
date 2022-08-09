@@ -49,7 +49,7 @@ def test_containment(polyhedron, q_angles, p_angles):
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
   else:
     print('No containment. %s' % largest_scaling)
-  return contains, largest_scaling
+  return contains, largest_scaling, p1.alpha, p1.translation
 
 class Polygon:
   def __init__(self, points, theta, phi, phi_bar):
@@ -94,10 +94,14 @@ class Polygon:
       if scaling_squared > largest_scaling_squared:
         self.largest_vertex = vertex
         largest_scaling_squared = scaling_squared
+        self.alpha = math.atan2(vertex[1], vertex[0])
+        self.translation = (vertex[2], vertex[3]) if len(vertex) > 2 else (0.0, 0.0)
 
     return math.sqrt(largest_scaling_squared)
 
   def contains(self, other):
+    self.alpha = 0.0
+    self.translation = (0.0, 0.0)
     test = [self.perimeter < other.perimeter, self.diameter < other.diameter, self.area < other.area, False]
     if self.perimeter < other.perimeter: return False, 0.0, test
     if self.diameter < other.diameter: return False, 0.0, test

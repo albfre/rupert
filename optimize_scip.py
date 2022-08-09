@@ -70,17 +70,36 @@ def constraints_fun_ij(x, qs, ps, i, j):
   #print('C: %s, %s: %s' % (i,j,det))
   return t - det
 
-def constraints_fun_ij2(x, qs, ps, i, j):
+def containment_determinant(x, qs, ps, i, j):
   (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, sa, ca, t) = x
 
   next_i = (i + 1) % len(qs)
   q0, q1 = project_to_plane_transformed2([qs[i], qs[next_i]], st_q, ct_q, sp_q, cp_q)
   p = rotate_transformed2(project_to_plane_transformed2([ps[j]], st_p, ct_p, sp_p, cp_p), sa, ca)[0]
   det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
-  return t - det
+  return det
+
+def containment_determinant_angles(x, qs, ps, i, j):
+  (theta_q, phi_q, theta_p, phi_p, alpha) = x
+
+  next_i = (i + 1) % len(qs)
+  q0, q1 = project_to_plane([qs[i], qs[next_i]], theta_q, phi_q)
+  p = rotate(project_to_plane([ps[j]], theta_p, phi_p), alpha)[0]
+  det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
+  return det
+
 
 def objective(x):
   return x[-1]
+
+def get_angle(s, c):
+  angle1 = math.asin(s)
+  angle2 = math.pi - angle1
+
+  diff1 = abs(math.cos(angle1) - c)
+  diff2 = abs(math.cos(angle2) - c)
+
+  return angle1 if diff1 < diff2 else angle2
 
 def optimize2(q, ps, x0=None): # q is a silhouette of p
 # variables:
@@ -107,7 +126,21 @@ def optimize2(q, ps, x0=None): # q is a silhouette of p
   cp_p = model.addVar('cp_p', vtype='C', lb=lb, ub=ub)
   salpha = model.addVar('salpha', vtype='C', lb=lb, ub=ub)
   calpha = model.addVar('calpha', vtype='C', lb=lb, ub=ub)
-  t = model.addVar('t', vtype='C', lb=-1, ub=1)
+  t = model.addVar('t', vtype='C', lb=-0.5, ub=2)
+
+  '''
+  st_q = model.addVar('st_q', vtype='C', lb=math.sin(0.5299069675048) - 1e-5, ub=math.sin(0.5299069675048) + 1e-5)
+  ct_q = model.addVar('ct_q', vtype='C', lb=math.cos(0.5299069675048) - 1e-5, ub=math.cos(0.5299069675048) + 1e-5)
+  st_p = model.addVar('st_p', vtype='C', lb=math.sin(0.47397226040856) - 1e-5, ub=math.sin(0.47397226040856) + 1e-5)
+  ct_p = model.addVar('ct_p', vtype='C', lb=math.cos(0.47397226040856) - 1e-5, ub=math.cos(0.47397226040856) + 1e-5)
+  sp_q = model.addVar('sp_q', vtype='C', lb=math.sin(math.acos(-0.653285231486307)) - 1e-5, ub=math.sin(math.acos(-0.653285231486307)) + 1e-5)
+  cp_q = model.addVar('cp_q', vtype='C', lb=math.cos(math.acos(-0.653285231486307)) - 1e-5, ub=math.cos(math.acos(-0.653285231486307)) + 1e-5)
+  sp_p = model.addVar('sp_p', vtype='C', lb=math.sin(math.acos(1.0)) - 1e-5, ub=math.sin(math.acos(1.0)) + 1e-5)
+  cp_p = model.addVar('cp_p', vtype='C', lb=math.cos(math.acos(1.0)) - 1e-5, ub=math.cos(math.acos(1.0)) + 1e-5)
+  salpha = model.addVar('salpha', vtype='C', lb=math.sin(0.83946456025974) - 1e-5, ub=math.sin(0.83946456025974) + 1e-5)
+  calpha = model.addVar('calpha', vtype='C', lb=math.cos(0.83946456025974) - 1e-5, ub=math.cos(0.83946456025974) + 1e-5)
+  t = 1.0
+  '''
 
   model.addCons(st_q * st_q + ct_q * ct_q == 1)
   model.addCons(st_p * st_p + ct_p * ct_p == 1)
@@ -121,11 +154,35 @@ def optimize2(q, ps, x0=None): # q is a silhouette of p
   x = (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, salpha, calpha, t)
   for j in range(len(ps)):
     for i in range(len(q)):
-      model.addCons(constraints_fun_ij2(x, q, ps, i, j) >= 0)
+      model.addCons(t - containment_determinant(x, q, ps, i, j) >= 0)
       
   model.setObjective(t)
   model.optimize()
   sol = model.getBestSol()
+
+  st_q = sol[st_q]
+  ct_q = sol[ct_q]
+  st_p = sol[st_p]
+  ct_p = sol[ct_p]
+  sp_q = sol[sp_q]
+  cp_q = sol[cp_q]
+  sp_p = sol[sp_p]
+  cp_p = sol[cp_p]
+  salpha = sol[salpha]
+  calpha = sol[calpha]
+  t = sol[t]
+  x = (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, salpha, calpha, t)
+  theta_q = get_angle(st_q, ct_q)
+  phi_q = get_angle(sp_q, cp_q)
+  theta_p = get_angle(st_p, ct_p)
+  phi_p = get_angle(sp_p, cp_p)
+
+  contains = test_containment(ps, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+  return x
+
+    
+
+  
 
 def optimize(q, ps, x0=None): # q is a silhouette of p
 # variables:
@@ -223,33 +280,96 @@ def get_t(angle):
   return t
 
 
-def run():
-  q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
-
-  p = cube()
-  p = pentagonal_icositetrahedron()
-
-  silhouettes = get_silhouettes(p)
-  silhouettes = [[27, 5, 28, 13, 3, 12, 29, 4, 26, 11, 2, 10]]
-
-  test_containment(dodecahedron(), [4.918788 - math.pi, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
-
+def test_cube():
   x0 = (get_t(4.918788-math.pi), get_t(2.0545287), get_t(0.8553414), get_t(2.108091)) # dodecahedron
 
-  x0 = (get_t(1.142397), get_t(math.acos(-0.6)), get_t(2.8559933), get_t(math.acos(-1.0))) #cube
-  #print(str([sin_transformed(x) for x in x0]))
-  print(str(x0))
+  p = cube()
 
-  silhouette_q = [13, 1, 9, 8, 2, 14, 6, 18, 19, 5]
-  silhouette_p = [16, 4, 12, 0, 8, 2, 11, 3, 15, 7, 19, 5]
+  contains, scaling, alpha, trans = test_containment(cube(), [0.52990696750, -0.65328523], [0.47397226, 1.0])
+  print(str(alpha))
+  print(str(trans))
+
+  #x0 = (get_t(1.142397), get_t(math.acos(-0.6)), get_t(2.8559933), get_t(math.acos(-1.0))) #cube
+
+  st_q = math.sin(0.5299069675048)
+  ct_q = math.cos(0.5299069675048)
+  st_p = math.sin(0.47397226040856)
+  ct_p = math.cos(0.47397226040856)
+  sp_q = math.sin(math.acos(-0.653285231486307))
+  cp_q = math.cos(math.acos(-0.653285231486307))
+  sp_p = math.sin(math.acos(1.0))
+  cp_p = math.cos(math.acos(1.0))
+  salpha = math.sin(0.83946456025974)
+  calpha = math.cos(0.83946456025974)
+  t = 1.0
+  x = (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, salpha, calpha, t)
+
+  #print(str([sin_transformed(x) for x in x0]))
+  print(str(x))
+
+  print(str(st_q**2 + ct_q**2))
+  print(str(st_p**2 + ct_p**2))
+  print(str(sp_q**2 + cp_q**2))
+  print(str(sp_p**2 + cp_p**2))
+  print(str(salpha**2 + calpha**2))
 
   silhouette_q = [2, 3, 7, 5, 4, 0]
-  silhouette_p = [6, 4, 0, 3]
+  silhouette_p = [6, 4, 0, 2]
 
   q = [p[i] for i in silhouette_q]
   ps = [p[i] for i in silhouette_p]
 
-  optimize2(q, ps, x0)
+  x_angles = [0.5299069675048, math.acos(-0.65328523148), 0.4739722604, math.acos(1.0), 0.8394645602]
+  for j in range(len(ps)):
+    for i in range(len(q)):
+      print(str(containment_determinant(x, q, ps, i, j)))
+      #print(str(containment_determinant_angles(x_angles, q, ps, i, j)))
+
+
+def test_x(x):
+  p = cube()
+  (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, salpha, calpha, t) = x
+
+  theta_q = get_angle(st_q, ct_q)
+  phi_q = get_angle(sp_q, cp_q)
+  theta_p = get_angle(st_p, ct_p)
+  phi_p = get_angle(sp_p, cp_p)
+
+  print(str((theta_q, phi_q, theta_p, phi_p)))
+
+  contains = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+
+  ps = p
+  q = p
+
+  silhouette_q = [2, 3, 7, 5, 4, 0]
+  silhouette_p = [6, 4, 0, 2]
+
+  q = [p[i] for i in silhouette_q]
+  ps = [p[i] for i in silhouette_p]
+
+  for j in range(len(ps)):
+    for i in range(len(q)):
+      print(str(containment_determinant(x, q, ps, i, j)))
+
+
+def run():
+  q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
+
+  p = pentagonal_icositetrahedron()
+  p = cube()
+
+  silhouettes = get_silhouettes(p)
+  silhouettes = [[27, 5, 28, 13, 3, 12, 29, 4, 26, 11, 2, 10]]
+
+  silhouette_q = [2, 3, 7, 5, 4, 0]
+  silhouette_p = [6, 4, 0, 2]
+
+  q = [p[i] for i in silhouette_q]
+  ps = [p[i] for i in silhouette_p]
+
+  x = optimize2(q, ps)
+
 
   if False:
     any_contains = False
@@ -264,4 +384,5 @@ def run():
         #contains = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
         #any_contains = any_contains or contains
         ii += 1
+  return x
 
