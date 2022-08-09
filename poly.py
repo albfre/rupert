@@ -147,11 +147,14 @@ def run():
   t = time.time()
   qa = [2.40587132115149, 0.649014357100288]
   pa =[5.071119649324, -8.998662569e-5]
-  #q, p, max_scaling = search_sphere(c, n)
+  test_containment(cube(), [1.142397, -0.6], [2.8559933, -1.0])
+  q, p, max_scaling = search_sphere(cube(), n)
   #q, p, max_scaling = search_around_point(c, n, qa, pa, 1e-2)
   #test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.33016097570079, -0.99341718840389], [0.4660300161899, 0.10294384746147]) # 1.0004360589 optimize
 
-  test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301604560341245, -0.9934171137372232], [0.466028785523233, 0.10294473679480336]) # 1.0004360874 optimize
+  #test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301604560341245, -0.9934171137372232], [0.466028785523233, 0.10294473679480336]) # 1.0004360874 optimize
+#  test_containment(dodecahedron(), [4.04107525e-5, -0.936244596507], [4.978785388, 6.250557e-6]) # 1.0108230584 optimize
+  #test_containment(dodecahedron(), [4.918788, math.cos(2.0545287)], [0.8553414, math.cos(2.108091)]) # 1.010818 from paper
 
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
   c = truncated_tetrahedron()
