@@ -10,7 +10,7 @@ from scipy.optimize import minimize
 from polytopes import *
 from polygon import *
 from projection import *
-from pyscipopt import Model
+from pyscipopt import Model, sqrt
 
 def constraints_fun(x, q_in, ps_in):
   assert(len(x) == 6)
@@ -79,6 +79,30 @@ def containment_determinant(x, qs, ps, i, j):
   det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
   return det
 
+def containment_determinant3(x, qs, ps, i, j, signs):
+  (theta_q, theta_p, phi_q, phi_p, alpha, t) = x
+
+  st_q = theta_q
+  ct_q = sqrt(1 - theta_q * theta_q)
+
+  sp_q = phi_q
+  cp_q = sqrt(1 - phi_q * phi_q)
+
+  st_p = theta_p
+  ct_p = -sqrt(1 - theta_p * theta_p)
+
+  sp_p = phi_p
+  cp_p = sqrt(1 - phi_p * phi_p)
+
+  sa = alpha
+  ca = sqrt(1 - alpha * alpha)
+
+  next_i = (i + 1) % len(qs)
+  q0, q1 = project_to_plane_transformed2([qs[i], qs[next_i]], st_q, ct_q, sp_q, cp_q)
+  p = rotate_transformed2(project_to_plane_transformed2([ps[j]], st_p, ct_p, sp_p, cp_p), sa, ca)[0]
+  det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
+  return det
+
 def containment_determinant_angles(x, qs, ps, i, j):
   (theta_q, phi_q, theta_p, phi_p, alpha) = x
 
@@ -92,6 +116,11 @@ def containment_determinant_angles(x, qs, ps, i, j):
 def objective(x):
   return x[-1]
 
+def get_angle3(s):
+  angle1 = math.asin(s)
+
+  return angle1
+
 def get_angle(s, c):
   angle1 = math.asin(s)
   angle2 = math.pi - angle1
@@ -100,6 +129,57 @@ def get_angle(s, c):
   diff2 = abs(math.cos(angle2) - c)
 
   return angle1 if diff1 < diff2 else angle2
+
+def optimize3(q, ps, x0=None): # q is a silhouette of p
+# variables:
+# q: theta_q, phi_q
+# p: theta_p, phi_p, alpha
+
+# minimize t
+# t, alpha, theta_q, phi_q, theta_p, phi_p
+# st R * M * p is inside M * q
+
+
+# replace sin(a), cos(a) by 2*t/(1+t^2), (1-t^2)/(1+t^2)
+
+  model = Model('Example')
+  lb = -1
+  ub = 1
+  theta_q = model.addVar('st_q', vtype='C', lb=lb, ub=ub)
+  theta_p = model.addVar('st_p', vtype='C', lb=lb, ub=ub)
+  phi_q = model.addVar('sp_q', vtype='C', lb=lb, ub=ub)
+  phi_p = model.addVar('sp_p', vtype='C', lb=lb, ub=ub)
+  alpha = model.addVar('salpha', vtype='C', lb=lb, ub=ub)
+  #tx = model.addVar('tx', vtype='C', lb=lb, ub=ub)
+  #ty = model.addVar('ty', vtype='C', lb=lb, ub=ub)
+  t = model.addVar('t', vtype='C', lb=-2, ub=2)
+
+  constraints = []
+  datas = []
+  cons = []
+  x = (theta_q, theta_p, phi_q, phi_p, alpha, t)
+  for j in range(len(ps)):
+    for i in range(len(q)):
+      model.addCons(t - containment_determinant3(x, q, ps, i, j, 0) >= 0)
+      
+  model.setObjective(t)
+  model.optimize()
+  sol = model.getBestSol()
+
+  theta_q = sol[theta_q]
+  theta_p = sol[theta_p]
+  phi_q = sol[phi_q]
+  phi_p = sol[phi_p]
+  alpha = sol[alpha]
+  t = sol[t]
+  x = (theta_q, theta_p, phi_q, phi_p, alpha, t)
+  theta_q = get_angle3(theta_q)
+  phi_q = get_angle3(phi_q)
+  theta_p = get_angle3(theta_p)
+  phi_p = get_angle3(phi_p)
+
+  contains = test_containment(ps, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+  return x
 
 def optimize2(q, ps, x0=None): # q is a silhouette of p
 # variables:
@@ -126,7 +206,7 @@ def optimize2(q, ps, x0=None): # q is a silhouette of p
   cp_p = model.addVar('cp_p', vtype='C', lb=lb, ub=ub)
   salpha = model.addVar('salpha', vtype='C', lb=lb, ub=ub)
   calpha = model.addVar('calpha', vtype='C', lb=lb, ub=ub)
-  t = model.addVar('t', vtype='C', lb=-0.5, ub=2)
+  t = model.addVar('t', vtype='C', lb=-2, ub=2)
 
   '''
   st_q = model.addVar('st_q', vtype='C', lb=math.sin(0.5299069675048) - 1e-5, ub=math.sin(0.5299069675048) + 1e-5)
@@ -197,14 +277,14 @@ def optimize(q, ps, x0=None): # q is a silhouette of p
 # replace sin(a), cos(a) by 2*t/(1+t^2), (1-t^2)/(1+t^2)
 
   model = Model('Example')
-  lb = -10
-  ub = 10
+  lb = -100
+  ub = 100
   theta_q = model.addVar('theta_q', vtype='C', lb=lb, ub=ub)
   theta_p = model.addVar('theta_p', vtype='C', lb=lb, ub=ub)
   phi_q = model.addVar('phi_q', vtype='C', lb=lb, ub=ub)
   phi_p = model.addVar('phi_p', vtype='C', lb=lb, ub=ub)
-  alpha = model.addVar('alpha', vtype='C', lb=-1, ub=1)
-  t = model.addVar('t', vtype='C', lb=-1, ub=1)
+  alpha = model.addVar('alpha', vtype='C', lb=lb, ub=ub)
+  t = model.addVar('t', vtype='C', lb=-2, ub=10)
 
   constraints = []
   datas = []
@@ -356,8 +436,9 @@ def test_x(x):
 def run():
   q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
 
-  p = pentagonal_icositetrahedron()
+  p = snub_cube()
   p = cube()
+  p = pentagonal_icositetrahedron()
 
   silhouettes = get_silhouettes(p)
   silhouettes = [[27, 5, 28, 13, 3, 12, 29, 4, 26, 11, 2, 10]]
@@ -365,10 +446,13 @@ def run():
   silhouette_q = [2, 3, 7, 5, 4, 0]
   silhouette_p = [6, 4, 0, 2]
 
-  q = [p[i] for i in silhouette_q]
-  ps = [p[i] for i in silhouette_p]
+  #silhouette_q = [6,7,3,1,0,4]
 
-  x = optimize2(q, ps)
+  q = [p[i] for i in silhouette_q]
+  #q = p
+  ps = p
+
+  x = optimize3(q, ps)
 
 
   if False:

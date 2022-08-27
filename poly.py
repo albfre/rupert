@@ -159,6 +159,7 @@ def run():
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
   c = truncated_tetrahedron()
   #q, p, max_scaling = search_around_point(c, n,[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781], 1e-2)
+  test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
 
 
   if False:

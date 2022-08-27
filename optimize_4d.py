@@ -39,7 +39,8 @@ def optimize(q, ps, seed=1338, x0=None): # q is a silhouette of p
 # maximize scaling
 # theta, phi
 
-  jac = '3-point'
+  method = 'Nelder-Mead' # SLSQP
+  jac = None if method == 'Nelder-Mead' else '3-point'
 
   constraints = []
   cons = []
@@ -48,7 +49,7 @@ def optimize(q, ps, seed=1338, x0=None): # q is a silhouette of p
   if not x0:
     x0 = list(rng.random(4))
 
-  res = minimize(get_obj(q, ps), x0, method='Nelder-Mead', jac=jac, constraints=constraints)
+  res = minimize(get_obj(q, ps), x0, method=method, jac=jac, constraints=constraints)
   return res
 
 def get_dual():
@@ -105,6 +106,41 @@ def get_silhouette(polyhedron, theta, phi):
   vertices = vertices[min_index:] + vertices[:min_index]
   return tuple(vertices)
 
+def find_trajectory(p):
+  qa = [4.627912, math.acos(0.0715399)]
+  pa =[5.8376, math.acos(-0.112877)]
+
+  qa = [4.64099, math.acos(0.076135)]
+  pa = [5.832936, math.acos(-0.12295)]
+
+  angles = []
+  angles.append((qa[0], qa[1], pa[0], pa[1]))
+  p_orig = list(p)
+
+  contains = True
+  expansion = 0.13
+  expansion_increment = 0.01
+  while contains:
+    print('Expansion: ' + str(expansion))
+    print('Angles: ' +str(angles))
+    p = expand(p_orig, expansion)
+    q = p
+    r = optimize_inner(q, p, 1338, angles[0])
+    theta_q, phi_q, theta_p, phi_p = r.x
+    contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+    if contains:
+      angles = [(theta_q, phi_q, theta_p, phi_p)]
+    else:
+      expansion -= expansion_increment
+      expansion_increment /= 2
+      contains = True
+
+    expansion += expansion_increment
+
+
+
+  
+
 def run_improve(p=None, n=1):
   if p is None:
     p = dual_polytope(rhombicosidodecahedron())
@@ -124,15 +160,16 @@ def run_improve(p=None, n=1):
   t = time.time()
   q = p
 
-  if False:
+  if True:
     angles1 = []
     n_theta = n
-    for i in range(n_theta):
-      theta = (2 * math.pi * i) / n_theta
-      for j in range(n):
-        phi_bar = -1 + 2 * j / (n - 1.0)
-        phi = math.acos(phi_bar)
-        angles1.append((theta, phi))
+    if n > 1:
+      for i in range(n_theta):
+        theta = (2 * math.pi * i) / n_theta
+        for j in range(n):
+          phi_bar = -1 + 2 * j / (n - 1.0)
+          phi = math.acos(phi_bar)
+          angles1.append((theta, phi))
 
     angles = []
     for angle1 in angles1:
@@ -141,6 +178,9 @@ def run_improve(p=None, n=1):
 
     qa = [4.62855249619, math.acos(0.078693308675666)]
     pa =[5.817518733566667, math.acos(-0.102768517482666)]
+
+    qa = [4.627912, math.acos(0.0715399)]
+    pa =[5.8376, math.acos(-0.112877)]
     angles.append((pa[0], pa[1], qa[0], qa[1]))
     angles.append((qa[0], qa[1], pa[0], pa[1]))
   else:
@@ -159,11 +199,11 @@ def run_improve(p=None, n=1):
   n_chunks = round(n_tests / n_per_chunk + 1)
   largest_scaling = 0.0
   if True:
-
     if False:
       silhouettes = get_silhouettes(p)
     else:
       silhouettes = [list(range(len(p)))]
+
     for index, s in enumerate(silhouettes):
       q = [p[i] for i in s]
 
@@ -184,7 +224,7 @@ def run_improve(p=None, n=1):
           for r in result:
             theta_q, phi_q, theta_p, phi_p = r.x
             try:
-              contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+              contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
               if contains:
                 print('contains')
                 if largest_scaling > best_scaling:
@@ -203,7 +243,7 @@ def run_improve(p=None, n=1):
         r = optimize(q, p, 1338, x0=[theta_q, phi_q, theta_p, phi_p])
         theta_q, phi_q, theta_p, phi_p = r.x
 
-        contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+        contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
         if contains:
           print('contains')
           if largest_scaling > best_scaling:
@@ -220,7 +260,7 @@ def run_improve(p=None, n=1):
   print('Time: %s' % d)
   if best_r:
     theta_q, phi_q, theta_p, phi_p = best_r.x
-    contains, largest_scaling = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+    contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   return largest_scaling > 1.0, best_r
   
 

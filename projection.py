@@ -59,3 +59,31 @@ def plot(points, hull):
     plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
 
   plt.show()
+
+
+def dist2(a, b):
+  d = 0.0
+  for x, y in zip(a, b):
+    d += (x - y) * (x - y)
+  return math.sqrt(d)
+
+def expand(c, alpha):
+  hull = ConvexHull(c)
+  points = []
+  for simplex, equation in zip(hull.simplices, hull.equations):
+    offset = equation[-1]
+    normal = [x / offset for x in equation[0:3]]
+    for point in [list(c[s]) for s in simplex]:
+      for i in range(len(point)):
+        point[i] += alpha * normal[i]
+      points.append(point)
+  filtered = []
+  for i in range(len(points)):
+    include = True
+    for j in range(i + 1, len(points)):
+      if dist2(points[i], points[j]) < 1e-6:
+        include = False
+        break
+    if include:
+      filtered.append(points[i])
+  return filtered
