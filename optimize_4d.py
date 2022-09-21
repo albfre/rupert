@@ -81,15 +81,6 @@ def optimize_inner(q, p, x0):
     print('Exception, continuing')
     return Result()
 
-def get_silhouette(polyhedron, theta, phi):
-  points_2d = project_to_plane(polyhedron, theta, phi)
-  hull = ConvexHull(points_2d)
-  vertices = list(hull._vertices)
-  min_vertex = min(vertices)
-  min_index = vertices.index(min_vertex)
-  vertices = vertices[min_index:] + vertices[:min_index]
-  return tuple(vertices)
-
 def find_trajectory(p):
   qa = [4.627912, math.acos(0.0715399)]
   pa =[5.8376, math.acos(-0.112877)]
