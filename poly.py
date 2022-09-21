@@ -159,8 +159,9 @@ def run():
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
   c = truncated_tetrahedron()
   #q, p, max_scaling = search_around_point(c, n,[0.3424291073589, 0.843452253487], [3.3333333e-10, 0.707106781], 1e-2)
-  test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
+  r = test_containment(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
 
+  print(str(r))
 
   if False:
     test_containment(tetrahedron(), [0.7801554885282173, -0.5793576087575756], [1.5707963257948965, 0.5773572977575758]) # 1.014610373
@@ -235,3 +236,12 @@ if False:
     plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
 
   plt.show()
+
+
+def test_time():
+  p = pentagonal_icositetrahedron()
+  pol = Polygon(project_to_plane(p, 0.3, 0.4), 0,0,0)
+  pol2 = Polygon(project_to_plane(p,0.4, 0.5), 0,0,0)
+  pol.compute_largest_scaling_time(pol2)
+
+

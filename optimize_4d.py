@@ -25,13 +25,12 @@ def objective(x, qs, ps):
   q = Polygon(points_q, theta_q, phi_q, phi_bar_q)
   p = Polygon(points_p, theta_p, phi_p, phi_bar_p)
   s = q.compute_largest_scaling(p)
-  #print(str(s))
   return -s**2
 
 def get_obj(qs, ps):
   return lambda x: objective(x, qs, ps)
 
-def optimize(q, ps, seed=1338, x0=None): # q is a silhouette of p
+def optimize(q, ps, seed=1338, x0=None):
 # variables:
 # q: theta_q, phi_q
 # p: theta_p, phi_p
@@ -52,18 +51,9 @@ def optimize(q, ps, seed=1338, x0=None): # q is a silhouette of p
   res = minimize(get_obj(q, ps), x0, method=method, jac=jac, constraints=constraints)
   return res
 
-def get_dual():
-  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
-  return dual_polytope(c)
-
-def get_snub_cube_dual():
-  return dual_polytope(snub_cube())
-
 def test_dual():
   c = snub_cube()
-  c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
-
-  #c = cube()
+  c = pentagonal_icositetrahedron()
 
   qa = [-0.464478427013, 0.66954456377]
   pa = [1.570798385, 0]
@@ -74,20 +64,14 @@ def test_dual():
   pa = [0.466028785523233, 0.10294473679480336]
 
   dual = dual_polytope(c)
-  
-
   test_containment(dual, pa, qa) # 1.000244 optimize
 
 
-
-
-
-  #  test_containment(, [1.39437813, 0.037334784167499], [1.6361904311, -0.37044476646]) # 1.000244 optimize
 class Result:
   def __init__(self):
     self.x = [0,0,0,0]
 
-def optimize_inner(q, p, seed, x0):
+def optimize_inner(q, p, x0):
   try:
     r = optimize(q, p, 1338, x0)
     return r
@@ -125,7 +109,7 @@ def find_trajectory(p):
     print('Angles: ' +str(angles))
     p = expand(p_orig, expansion)
     q = p
-    r = optimize_inner(q, p, 1338, angles[0])
+    r = optimize_inner(q, p, angles[0])
     theta_q, phi_q, theta_p, phi_p = r.x
     contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
     if contains:
@@ -138,20 +122,10 @@ def find_trajectory(p):
     expansion += expansion_increment
 
 
-
-  
-
 def run_improve(p=None, n=1):
   if p is None:
     p = dual_polytope(rhombicosidodecahedron())
     p = dual_polytope(snub_cube())
-
-  theta_q = 4.91885536
-  phi_q = math.acos(-0.4651241815)
-  theta_p = 0.85533109966
-  phi_p = math.acos(-0.51181376779)
-  rng = np.random.default_rng()
-  test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
 
   contains = False
   r = None
@@ -160,38 +134,20 @@ def run_improve(p=None, n=1):
   t = time.time()
   q = p
 
-  if True:
-    angles1 = []
-    n_theta = n
-    if n > 1:
-      for i in range(n_theta):
-        theta = (2 * math.pi * i) / n_theta
-        for j in range(n):
-          phi_bar = -1 + 2 * j / (n - 1.0)
-          phi = math.acos(phi_bar)
-          angles1.append((theta, phi))
+  angles1 = []
+  n_theta = n
+  if n > 1:
+    for i in range(n_theta):
+      theta = (2 * math.pi * i) / n_theta
+      for j in range(n):
+        phi_bar = -1 + 2 * j / (n - 1.0)
+        phi = math.acos(phi_bar)
+        angles1.append((theta, phi))
 
-    angles = []
-    for angle1 in angles1:
-      for angle2 in angles1:
-        angles.append((angle1[0], angle1[1], angle2[0], angle2[1]))
-
-    qa = [4.62855249619, math.acos(0.078693308675666)]
-    pa =[5.817518733566667, math.acos(-0.102768517482666)]
-
-    qa = [4.627912, math.acos(0.0715399)]
-    pa =[5.8376, math.acos(-0.112877)]
-    angles.append((pa[0], pa[1], qa[0], qa[1]))
-    angles.append((qa[0], qa[1], pa[0], pa[1]))
-  else:
-    angles = []
-    for i in range(n):
-      theta_q, phi_q, theta_p, phi_p = list(rng.random(4))
-      theta_q = 2 * math.pi * theta_q
-      theta_p = 2 * math.pi * theta_p
-      phi_q = math.acos(2 * (phi_q - 0.5))
-      phi_p = math.acos(2 * (phi_p - 0.5))
-      angles.append((theta_q, phi_q, theta_p, phi_p))
+  angles = []
+  for angle1 in angles1:
+    for angle2 in angles1:
+      angles.append((angle1[0], angle1[1], angle2[0], angle2[1]))
 
   i = 0
   n_tests = len(angles)
@@ -211,15 +167,11 @@ def run_improve(p=None, n=1):
         for chunk_i in range(n_chunks):
           begin_i = min(chunk_i * n_per_chunk, n_tests)
           end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
-          #if end_i < 412624: continue # snub_cube
-          #if end_i < 25472: continue # snub_cube
-          #if end_i < 694400: continue # deltoidalhexecontahedron
-
           print(str(index) + '. ' + str(begin_i) + ' of ' + str(len(angles)) + '. ')
 
           if begin_i == end_i: continue
           chunk_angles = angles[begin_i:end_i]
-          result = pool.map(partial(optimize_inner, q, p, 1338), chunk_angles)
+          result = pool.map(partial(optimize_inner, q, p), chunk_angles)
 
           for r in result:
             theta_q, phi_q, theta_p, phi_p = r.x
@@ -237,7 +189,6 @@ def run_improve(p=None, n=1):
     for theta_q, phi_q, theta_p, phi_p in angles:
       print(str(i) + ' of ' + str(len(angles)) + '. ')
       i += 1
-      #if i < 412234: continue
 
       try:
         r = optimize(q, p, 1338, x0=[theta_q, phi_q, theta_p, phi_p])
@@ -307,7 +258,7 @@ def run_johnson():
     name, p = read_file(d + f)
     if name in left:
       print(name)
-      contains, r = run_improve(p, 100)
+      contains, r = run_improve(p, 3)
       if contains:
         print(name + ' contains ' + str(r))
 

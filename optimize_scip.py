@@ -80,7 +80,7 @@ def containment_determinant(x, qs, ps, i, j):
   return det
 
 def containment_determinant3(x, qs, ps, i, j, signs):
-  (theta_q, theta_p, phi_q, phi_p, alpha, t) = x
+  (theta_q, theta_p, phi_q, phi_p, alpha, tx, ty, t) = x
 
   st_q = theta_q
   ct_q = sqrt(1 - theta_q * theta_q)
@@ -92,14 +92,16 @@ def containment_determinant3(x, qs, ps, i, j, signs):
   ct_p = -sqrt(1 - theta_p * theta_p)
 
   sp_p = phi_p
-  cp_p = sqrt(1 - phi_p * phi_p)
+  cp_p = -sqrt(1 - phi_p * phi_p)
 
   sa = alpha
-  ca = sqrt(1 - alpha * alpha)
+  ca = -sqrt(1 - alpha * alpha)
 
   next_i = (i + 1) % len(qs)
   q0, q1 = project_to_plane_transformed2([qs[i], qs[next_i]], st_q, ct_q, sp_q, cp_q)
   p = rotate_transformed2(project_to_plane_transformed2([ps[j]], st_p, ct_p, sp_p, cp_p), sa, ca)[0]
+  p[0] += tx
+  p[1] += ty
   det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
   return det
 
@@ -150,14 +152,23 @@ def optimize3(q, ps, x0=None): # q is a silhouette of p
   phi_q = model.addVar('sp_q', vtype='C', lb=lb, ub=ub)
   phi_p = model.addVar('sp_p', vtype='C', lb=lb, ub=ub)
   alpha = model.addVar('salpha', vtype='C', lb=lb, ub=ub)
-  #tx = model.addVar('tx', vtype='C', lb=lb, ub=ub)
-  #ty = model.addVar('ty', vtype='C', lb=lb, ub=ub)
+  tx = model.addVar('tx', vtype='C', lb=-0.01, ub=0.01)
+  ty = model.addVar('ty', vtype='C', lb=-0.01, ub=0.01)
   t = model.addVar('t', vtype='C', lb=-2, ub=2)
+
+  #theta_q = model.addVar('st_q', vtype='C', lb=0.98, ub=0.99)
+  #theta_p = model.addVar('st_p', vtype='C', lb=0.99, ub=1)
+  #phi_q = model.addVar('sp_q', vtype='C', lb=0.99, ub=1)
+  #phi_p = model.addVar('sp_p', vtype='C', lb=0.92, ub=0.94)
+  #alpha = model.addVar('salpha', vtype='C', lb=-1, ub=-0.98)
+  #tx = model.addVar('tx', vtype='C', lb=-0.01, ub=0.01)
+  #ty = model.addVar('ty', vtype='C', lb=-0.01, ub=0.01)
+  #t = model.addVar('t', vtype='C', lb=-2, ub=2)
 
   constraints = []
   datas = []
   cons = []
-  x = (theta_q, theta_p, phi_q, phi_p, alpha, t)
+  x = (theta_q, theta_p, phi_q, phi_p, alpha, tx, ty, t)
   for j in range(len(ps)):
     for i in range(len(q)):
       model.addCons(t - containment_determinant3(x, q, ps, i, j, 0) >= 0)
@@ -171,8 +182,10 @@ def optimize3(q, ps, x0=None): # q is a silhouette of p
   phi_q = sol[phi_q]
   phi_p = sol[phi_p]
   alpha = sol[alpha]
+  tx = sol[tx]
+  ty = sol[ty]
   t = sol[t]
-  x = (theta_q, theta_p, phi_q, phi_p, alpha, t)
+  x = (theta_q, theta_p, phi_q, phi_p, alpha, tx, ty, t)
   theta_q = get_angle3(theta_q)
   phi_q = get_angle3(phi_q)
   theta_p = get_angle3(theta_p)
@@ -443,9 +456,11 @@ def run():
   silhouettes = get_silhouettes(p)
   silhouettes = [[27, 5, 28, 13, 3, 12, 29, 4, 26, 11, 2, 10]]
 
+  # pentagonal icositetrahedron
   silhouette_q = [2, 3, 7, 5, 4, 0]
   silhouette_p = [6, 4, 0, 2]
 
+  # cube
   #silhouette_q = [6,7,3,1,0,4]
 
   q = [p[i] for i in silhouette_q]

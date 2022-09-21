@@ -46,7 +46,7 @@ def constraints_fun_ij(x, qs, ps, i, j):
 
 def containment_determinant(x, qs, ps, i, j):
   (theta_q, phi_q, theta_p, phi_p, alpha, t) = x
-  return t - constraints_fun_ij(x, qs, ps, i, j)
+  return constraints_fun_ij(x, qs, ps, i, j)
 
 def obj(x):
   return sum(y**2 for y in x)
@@ -161,8 +161,11 @@ def run():
 
   p = dodecahedron()
   p = cube()
+  p = pentagonal_icositetrahedron()
   silhouettes = get_silhouettes(p)
   any_contains = False
+  best_r = []
+  best_scaling = 1
   for rni in range(1):
     ii = 0
     for s in silhouettes:
@@ -170,8 +173,11 @@ def run():
       r, constraints = optimize(q, p, 1338 + rni)
       theta_q, phi_q, theta_p, phi_p, alpha, t = r.x
 
-      print(str(rni) + ", " + str(ii) + ' of ' + str(len(silhouettes)) + (' * ' if any_contains else ' '), end='')
-      contains = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+      print(str(rni) + ", " + str(ii) + ' of ' + str(len(silhouettes)) + (" " + str(best_r.x) + " " + str(best_scaling) if any_contains else ' '), end='')
+      contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
       any_contains = any_contains or contains
+      if largest_scaling > best_scaling:
+        best_scaling = largest_scaling
+        best_r = r
       ii += 1
   return r, constraints
