@@ -41,6 +41,15 @@ def read_file(f):
 def pentagonal_icositetrahedron():
   return read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]
 
+def triakis_tetrahedron():
+  return read_file('Catalan/01TriakisTetrahedron.txt')[1]
+
+def deltoidal_hexecontahedron():
+  return read_file('Catalan/11DeltoidalHexecontahedron.txt')[1]
+
+def pentagonal_hexecontahedron():
+  return read_file('Catalan/12LpentagonalHexecontahedron.txt')[1]
+
 def random_polytope(n):
   rng = np.random.default_rng(1338)
   points = rng.random((n, 3))

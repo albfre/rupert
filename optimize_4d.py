@@ -30,6 +30,39 @@ def objective(x, qs, ps):
 def get_obj(qs, ps):
   return lambda x: objective(x, qs, ps)
 
+def constraint_fun(x):
+  (theta_q, phi_q, theta_p, phi_p) = x
+  return theta_q - theta_p - 0.1
+  #return (theta_q - theta_p)**2 + (phi_q-phi_p)**2 - 20
+  
+
+def optimize2(q, ps, seed=1338, x0=None):
+# variables:
+# q: theta_q, phi_q
+# p: theta_p, phi_p
+
+# maximize scaling
+# theta, phi
+
+  method = 'SLSQP' # SLSQP
+  jac = None if method == 'Nelder-Mead' else '3-point'
+
+  constraints = []
+  cons = []
+
+  constr = {'type': 'ineq', 'fun': constraint_fun}
+  constraints.append(constr)
+  pi = math.pi
+  bounds = [(0,2*pi), (0, pi), (0, 2*pi), (0,pi)]
+
+  rng = np.random.default_rng(seed)
+  if not x0:
+    x0 = list(rng.random(4))
+
+  res = minimize(get_obj(q, ps), x0, method=method, jac=jac, constraints=constraints, bounds=bounds)
+  #print(str(res))
+  return res
+
 def optimize(q, ps, seed=1338, x0=None):
 # variables:
 # q: theta_q, phi_q
@@ -113,7 +146,7 @@ def find_trajectory(p):
     expansion += expansion_increment
 
 
-def run_improve(p=None, n=1):
+def run_improve(p=None, n=1, early_return=False):
   if p is None:
     p = dual_polytope(rhombicosidodecahedron())
     p = dual_polytope(snub_cube())
@@ -134,6 +167,8 @@ def run_improve(p=None, n=1):
         phi_bar = -1 + 2 * j / (n - 1.0)
         phi = math.acos(phi_bar)
         angles1.append((theta, phi))
+  else:
+    angles1 = [(0,0)]
 
   angles = []
   for angle1 in angles1:
@@ -173,6 +208,8 @@ def run_improve(p=None, n=1):
                 if largest_scaling > best_scaling:
                   best_scaling = largest_scaling
                   best_r = r
+                  if early_return:
+                    return True, best_r
             except:
               print('Except')
           print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
@@ -239,9 +276,9 @@ def run():
 def run_johnson():
   d = 'Johnson/'
 
-  left = ['Gyroelongated Pentagonal Rotunda', 'Gyroelongated Square Bicupola', 'Gyroelongated Pentagonal Cupolarotunda', 'Triaugmented Truncated Dodecahedron']
+  left = ['Gyroelongated Pentagonal Rotunda', 'Gyroelongated Square Bicupola', 'Gyroelongated Pentagonal Cupolarotunda', 'Triaugmented Truncated Dodecahedron', 'Diminished Rhombicosidodecahedron']
 
-  left = ['Gyrate Rhombicosidodecahedron', 'Parabigyrate Rhombicosidodecahedron', 'Metabigyrate Rhombicosidodecahedron', 'Trigyrate Rhombicosidodecahedron', 'Diminished Rhombicosidodecahedron', 'Paragyrate Diminished Rhombicosidodecahedron'] # no found after 100 runs
+  left = ['Gyrate Rhombicosidodecahedron', 'Parabigyrate Rhombicosidodecahedron', 'Metabigyrate Rhombicosidodecahedron', 'Trigyrate Rhombicosidodecahedron', , 'Paragyrate Diminished Rhombicosidodecahedron'] # no found after 100 runs
 
   files = [f for f in listdir(d) if isfile(join(d, f)) and len(f) > 4 and f[-4:] == '.txt']
   #files = [f for f in files if any(l in f for l in left)]
@@ -249,9 +286,11 @@ def run_johnson():
     name, p = read_file(d + f)
     if name in left:
       print(name)
-      contains, r = run_improve(p, 3)
+      contains, r = run_improve(p, 5, True)
       if contains:
         print(name + ' contains ' + str(r))
+      else:
+        print('DOES NOT CONTAIN')
 
 def run_catalan():
   d = 'Catalan/'
@@ -259,6 +298,6 @@ def run_catalan():
 
   for f in files:
     name, p = read_file(d + f)
-    contains, r = run_improve(p, 100)
+    contains, r = run_improve(p, 5, True)
     if contains:
       print(name + ' contains ' + str(r))
