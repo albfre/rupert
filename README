@@ -16,5 +16,7 @@ A number of polyhedra (the Platonic and the Archimedean, and some of the Catalan
 ## Additional search methods
 
 `poly.py` contains a bruteforce search method, and results for a few polyhedra.
+
 `optimize3d.py` contains an optimization method trying to maximize the distance between the rotated projection of a polyhedron to the convex hull of different silhouettes of of the polyhedron.
+
 `optimize_scip.py` contains experimental work trying to use the global optimizer SCIP to show Rupertness.
