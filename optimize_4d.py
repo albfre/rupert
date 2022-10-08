@@ -27,43 +27,10 @@ def objective(x, qs, ps):
   s = q.compute_largest_scaling(p)
   return -s**2
 
-def get_obj(qs, ps):
-  return lambda x: objective(x, qs, ps)
+def get_obj(q, p):
+  return lambda x: objective(x, q, p)
 
-def constraint_fun(x):
-  (theta_q, phi_q, theta_p, phi_p) = x
-  return theta_q - theta_p - 0.1
-  #return (theta_q - theta_p)**2 + (phi_q-phi_p)**2 - 20
-  
-
-def optimize2(q, ps, seed=1338, x0=None):
-# variables:
-# q: theta_q, phi_q
-# p: theta_p, phi_p
-
-# maximize scaling
-# theta, phi
-
-  method = 'SLSQP' # SLSQP
-  jac = None if method == 'Nelder-Mead' else '3-point'
-
-  constraints = []
-  cons = []
-
-  constr = {'type': 'ineq', 'fun': constraint_fun}
-  constraints.append(constr)
-  pi = math.pi
-  bounds = [(0,2*pi), (0, pi), (0, 2*pi), (0,pi)]
-
-  rng = np.random.default_rng(seed)
-  if not x0:
-    x0 = list(rng.random(4))
-
-  res = minimize(get_obj(q, ps), x0, method=method, jac=jac, constraints=constraints, bounds=bounds)
-  #print(str(res))
-  return res
-
-def optimize(q, ps, seed=1338, x0=None):
+def optimize(q, p, seed=1338, x0=None):
 # variables:
 # q: theta_q, phi_q
 # p: theta_p, phi_p
@@ -77,28 +44,12 @@ def optimize(q, ps, seed=1338, x0=None):
   constraints = []
   cons = []
 
-  rng = np.random.default_rng(seed)
   if not x0:
+    rng = np.random.default_rng(seed)
     x0 = list(rng.random(4))
 
-  res = minimize(get_obj(q, ps), x0, method=method, jac=jac, constraints=constraints)
+  res = minimize(get_obj(q, p), x0, method=method, jac=jac, constraints=constraints)
   return res
-
-def test_dual():
-  c = snub_cube()
-  c = pentagonal_icositetrahedron()
-
-  qa = [-0.464478427013, 0.66954456377]
-  pa = [1.570798385, 0]
-
-  qa = [4.62855249619, 0.078693308675666]
-  pa =[5.817518733566667, -0.102768517482666]
-  qa = [2.3301604560341245, -0.9934171137372232]
-  pa = [0.466028785523233, 0.10294473679480336]
-
-  dual = dual_polytope(c)
-  test_containment(dual, pa, qa) # 1.000244 optimize
-
 
 class Result:
   def __init__(self):
@@ -117,9 +68,6 @@ def optimize_inner(q, p, x0):
 def find_trajectory(p):
   qa = [4.627912, math.acos(0.0715399)]
   pa =[5.8376, math.acos(-0.112877)]
-
-  qa = [4.64099, math.acos(0.076135)]
-  pa = [5.832936, math.acos(-0.12295)]
 
   angles = []
   angles.append((qa[0], qa[1], pa[0], pa[1]))
@@ -146,10 +94,9 @@ def find_trajectory(p):
     expansion += expansion_increment
 
 
-def run_improve(p=None, n=1, early_return=False):
+def run(p=None, n=1, early_return=False):
   if p is None:
-    p = dual_polytope(rhombicosidodecahedron())
-    p = dual_polytope(snub_cube())
+    p = triakis_tetrahedron()
 
   contains = False
   r = None
@@ -159,16 +106,12 @@ def run_improve(p=None, n=1, early_return=False):
   q = p
 
   angles1 = []
-  n_theta = n
-  if n > 1:
-    for i in range(n_theta):
-      theta = (2 * math.pi * i) / n_theta
-      for j in range(n):
-        phi_bar = -1 + 2 * j / (n - 1.0)
-        phi = math.acos(phi_bar)
-        angles1.append((theta, phi))
-  else:
-    angles1 = [(0,0)]
+  for i in range(n):
+    theta = (2 * math.pi * i) / n
+    for j in range(n):
+      phi_bar = -1 + (2 * j / (n - 1.0) if n > 0 else 0)
+      phi = math.acos(phi_bar)
+      angles1.append((theta, phi))
 
   angles = []
   for angle1 in angles1:
@@ -180,60 +123,31 @@ def run_improve(p=None, n=1, early_return=False):
   n_per_chunk = 16
   n_chunks = round(n_tests / n_per_chunk + 1)
   largest_scaling = 0.0
-  if True:
-    if False:
-      silhouettes = get_silhouettes(p)
-    else:
-      silhouettes = [list(range(len(p)))]
 
-    for index, s in enumerate(silhouettes):
-      q = [p[i] for i in s]
+  with Pool() as pool:
+    for chunk_i in range(n_chunks):
+      begin_i = min(chunk_i * n_per_chunk, n_tests)
+      end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
+      print(str(begin_i) + ' of ' + str(len(angles)) + '. ')
+      if begin_i == end_i: continue
 
-      with Pool() as pool:
-        for chunk_i in range(n_chunks):
-          begin_i = min(chunk_i * n_per_chunk, n_tests)
-          end_i = min((chunk_i + 1) * n_per_chunk, n_tests)
-          print(str(index) + '. ' + str(begin_i) + ' of ' + str(len(angles)) + '. ')
+      chunk_angles = angles[begin_i:end_i]
+      result = pool.map(partial(optimize_inner, q, p), chunk_angles)
 
-          if begin_i == end_i: continue
-          chunk_angles = angles[begin_i:end_i]
-          result = pool.map(partial(optimize_inner, q, p), chunk_angles)
-
-          for r in result:
-            theta_q, phi_q, theta_p, phi_p = r.x
-            try:
-              contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
-              if contains:
-                print('contains')
-                if largest_scaling > best_scaling:
-                  best_scaling = largest_scaling
-                  best_r = r
-                  if early_return:
-                    return True, best_r
-            except:
-              print('Except')
-          print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
-  else:
-    for theta_q, phi_q, theta_p, phi_p in angles:
-      print(str(i) + ' of ' + str(len(angles)) + '. ')
-      i += 1
-
-      try:
-        r = optimize(q, p, 1338, x0=[theta_q, phi_q, theta_p, phi_p])
+      for r in result:
         theta_q, phi_q, theta_p, phi_p = r.x
-
-        contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
-        if contains:
-          print('contains')
-          if largest_scaling > best_scaling:
-            best_scaling = largest_scaling
-            best_r = r
-
-        print('Best scaling: %s' % best_scaling)
-      except KeyboardInterrupt:
-        sys.exit()
-      except:
-        print('Exception, continuing')
+        try:
+          contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+          if contains:
+            print('contains')
+            if largest_scaling > best_scaling:
+              best_scaling = largest_scaling
+              best_r = r
+              if early_return:
+                return True, best_r
+        except:
+          print('Except')
+      print('Best scaling: %s, %s' % (best_scaling, best_r.x if best_r else None))
 
   d = time.time() - t
   print('Time: %s' % d)
@@ -242,43 +156,10 @@ def run_improve(p=None, n=1, early_return=False):
     contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   return largest_scaling > 1.0, best_r
   
-
-def run():
-  q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
-  p = cube()
-
-  p = snub_cube()
-  p = rhombicosidodecahedron()
-  #p = dual_polytope(rhombicosidodecahedron())
-  silhouettes = get_silhouettes(p, n=400)
-  any_contains = False
-  t = time.time()
-  for rni in range(10):
-    ii = 0
-    for s in silhouettes:
-      q = [p[i] for i in s]
-      try:
-        r =  optimize(q, p, 1338 + rni)
-        theta_q, phi_q, theta_p, phi_p = r.x
-
-        print(str(rni) + ", " + str(ii) + ' of ' + str(len(silhouettes)) + (' * ' if any_contains else ' '), end='')
-        contains = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
-        any_contains = any_contains or contains
-      except KeyboardInterrupt:
-        sys.exit()
-      except:
-        print('Exception, continuing')
-      ii += 1
-  d = time.time() - t
-  print('Time: %s' % d)
-  return r
-
 def run_johnson():
   d = 'Johnson/'
 
-  left = ['Gyroelongated Pentagonal Rotunda', 'Gyroelongated Square Bicupola', 'Gyroelongated Pentagonal Cupolarotunda', 'Triaugmented Truncated Dodecahedron', 'Diminished Rhombicosidodecahedron']
-
-  left = ['Gyrate Rhombicosidodecahedron', 'Parabigyrate Rhombicosidodecahedron', 'Metabigyrate Rhombicosidodecahedron', 'Trigyrate Rhombicosidodecahedron', , 'Paragyrate Diminished Rhombicosidodecahedron'] # no found after 100 runs
+  left = ['Gyrate Rhombicosidodecahedron', 'Parabigyrate Rhombicosidodecahedron', 'Metabigyrate Rhombicosidodecahedron', 'Trigyrate Rhombicosidodecahedron', 'Paragyrate Diminished Rhombicosidodecahedron']
 
   files = [f for f in listdir(d) if isfile(join(d, f)) and len(f) > 4 and f[-4:] == '.txt']
   #files = [f for f in files if any(l in f for l in left)]
@@ -289,8 +170,6 @@ def run_johnson():
       contains, r = run_improve(p, 5, True)
       if contains:
         print(name + ' contains ' + str(r))
-      else:
-        print('DOES NOT CONTAIN')
 
 def run_catalan():
   d = 'Catalan/'

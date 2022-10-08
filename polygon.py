@@ -46,7 +46,7 @@ def test_containment(polyhedron, q_angles, p_angles):
   #print(str(p1.hull.vertices))
   #print(str(p2.hull.vertices))
   if contains:
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi_bar, p2.theta, p2.phi_bar, largest_scaling))
+    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, largest_scaling))
   else:
     print('No containment. %s' % largest_scaling)
   return contains, largest_scaling, p1.alpha, p1.translation
@@ -60,8 +60,6 @@ def test_containment2(polyhedron, q_angles, p_angles):
   p1 = Polygon(points_q, theta_q, phi_q)
   p2 = Polygon(points_p, theta_p, phi_p)
   contains, largest_scaling, test = p1.contains(p2)
-  #print(str(p1.hull.vertices))
-  #print(str(p2.hull.vertices))
   if contains:
     print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.7f}".format(largest_scaling))
     print("{:.7f}".format(p1.alpha) + " & " + "{:.7f}".format(p1.translation[0]) + " & " + "{:.7f}".format(p1.translation[1]))

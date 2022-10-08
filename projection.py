@@ -34,6 +34,9 @@ def rotate(points, alpha):
   sa = math.sin(alpha)
   return [[ca * p[0] - sa * p[1],   sa * p[0] + ca * p[1]] for p in points]
 
+def translate(points, u, v):
+  return [[x + u, y + v] for x,y in points]
+
 def get_silhouette(polyhedron, theta, phi):
   points_2d = project_to_plane(polyhedron, theta, phi)
   hull = ConvexHull(points_2d)
