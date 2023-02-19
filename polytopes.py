@@ -4,7 +4,7 @@ import math
 
 golden_ratio = (1.0 + math.sqrt(5)) / 2
 
-def read_file(f):
+def read_polyhedron(f):
   lines = [l for l in open(f).readlines() if len(l) > 0]
   name = lines[0].strip()
   constants = {}
@@ -35,8 +35,36 @@ def read_file(f):
         else:
           p.append(float(v))
       points.append(p)
+
+  faces = []
+  for line in lines:
+    p = []
+    if line[0] == '{':
+      values = line.replace('{','').replace('}','')
+      values = values.split(',')
+      for v in values:
+        p.append(int(v))
+      faces.append(p)
+
+  edges = []
+  for face in faces:
+    for i in range(len(face)):
+      edges.append([face[i], face[(i+1) % len(face)]])
+
+  return name, points, faces, edges
+
+def read_file(f):
+  name, points, faces, edges = read_polyhedron(f)
   return name, points
 
+def find_edges(points, d):
+  edges = []
+  for i in range(len(points)):
+    for j in range(i + 1, len(points)):
+      dist = math.sqrt(sum((x - y)**2 for x,y in zip(points[i], points[j])))
+      if abs(dist - d) < 1e-5:
+        edges.append((i,j))
+  return edges
 
 def pentagonal_icositetrahedron():
   return read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]

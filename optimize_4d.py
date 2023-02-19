@@ -13,6 +13,10 @@ from polygon import *
 from projection import *
 from os import listdir
 from os.path import isfile, join
+  
+class Result:
+  def __init__(self):
+    self.x = [0,0,0,0]
 
 def objective(x, qs, ps):
   assert(len(x) == 4)
@@ -30,7 +34,47 @@ def objective(x, qs, ps):
 def get_obj(q, p):
   return lambda x: objective(x, q, p)
 
-def optimize(q, p, seed=1338, x0=None):
+def get_shifted_objective(obj, x, i, h):
+  x_shift = list(x)
+  x_shift[i] = x[i] + h
+  fp = obj(x_shift)
+  x_shift[i] = x[i] - h
+  fm = obj(x_shift)
+  return fp, fm
+
+def get_gradient(obj, x):
+  h = 1e-8
+  f = obj(x)
+  grad = [0]*len(x)
+
+  for i in range(len(x)):
+    fp, fm = get_shifted_objective(obj, x, i, h)
+    grad[i] = (fp - fm) / (2 * h)
+  return grad
+
+def optimize_gradient_descent(obj, x):
+  improves = True
+  f = obj(x)
+  while improves:
+    improves = False
+
+    grad = get_gradient(obj, x)
+    delta = 1
+    while delta > 1e-8:
+      new_x = [y - delta * z for y, z in zip(x, grad)]
+      new_f = obj(new_x) 
+      if new_f < f - 1e-8:
+        f = new_f
+        x = new_x
+        improves = True
+        #print('New obj: %s, delta: %s' % (new_obj, delta))
+        break
+      delta /= 2
+  r = Result()
+  r.x = x
+  return r
+
+def optimize(obj, x0):
 # variables:
 # q: theta_q, phi_q
 # p: theta_p, phi_p
@@ -39,25 +83,23 @@ def optimize(q, p, seed=1338, x0=None):
 # theta, phi
 
   method = 'Nelder-Mead' # SLSQP
+  method = 'L-BFGS-B' # SLSQP # bfgs: triakis 200s, pentagonal
+  method = 'SLSQP' # SLSQP # bfgs: triakis 200s, pentagonal
   jac = None if method == 'Nelder-Mead' else '3-point'
 
   constraints = []
   cons = []
 
-  if not x0:
-    rng = np.random.default_rng(seed)
-    x0 = list(rng.random(4))
-
-  res = minimize(get_obj(q, p), x0, method=method, jac=jac, constraints=constraints)
+  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints)
   return res
 
-class Result:
-  def __init__(self):
-    self.x = [0,0,0,0]
-
-def optimize_inner(q, p, x0):
+def optimize_inner(q, p, gradient_descent, x0):
   try:
-    r = optimize(q, p, 1338, x0)
+    obj = get_obj(q, p)
+    if gradient_descent:
+      r = optimize_gradient_descent(obj, x0)
+    else:
+      r = optimize(obj, x0)
     return r
   except KeyboardInterrupt:
     sys.exit()
@@ -81,7 +123,7 @@ def find_trajectory(p):
     print('Angles: ' +str(angles))
     p = expand(p_orig, expansion)
     q = p
-    r = optimize_inner(q, p, angles[0])
+    r = optimize_inner(q, p, False, angles[0])
     theta_q, phi_q, theta_p, phi_p = r.x
     contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
     if contains:
@@ -93,8 +135,7 @@ def find_trajectory(p):
 
     expansion += expansion_increment
 
-
-def run(p=None, n=1, early_return=False):
+def run(p=None, n=1, gradient_descent=False, early_return=False):
   if p is None:
     p = triakis_tetrahedron()
 
@@ -132,7 +173,7 @@ def run(p=None, n=1, early_return=False):
       if begin_i == end_i: continue
 
       chunk_angles = angles[begin_i:end_i]
-      result = pool.map(partial(optimize_inner, q, p), chunk_angles)
+      result = pool.map(partial(optimize_inner, q, p, gradient_descent), chunk_angles)
 
       for r in result:
         theta_q, phi_q, theta_p, phi_p = r.x

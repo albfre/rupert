@@ -467,7 +467,7 @@ def run():
   #q = p
   ps = p
 
-  x = optimize3(q, ps)
+  x = optimize2(q, ps)
 
 
   if False:

@@ -32,7 +32,10 @@ def project_to_plane(points, theta, phi):
 def rotate(points, alpha):
   ca = math.cos(alpha)
   sa = math.sin(alpha)
-  return [[ca * p[0] - sa * p[1],   sa * p[0] + ca * p[1]] for p in points]
+  return [[ca * p[0] - sa * p[1], sa * p[0] + ca * p[1]] for p in points]
+
+def scale(points, s):
+  return [[s * x, s * y] for x,y in points]
 
 def translate(points, u, v):
   return [[x + u, y + v] for x,y in points]

@@ -14,6 +14,7 @@ from projection import *
 from os import listdir
 from os.path import isfile, join
 import itertools
+import mpmath
 
 
 def rotate(ps, angle, i, j):
@@ -104,9 +105,9 @@ def optimize(m, n, seed=1338, x0=None):
   return res
 
 
-def run(m, n):
+def run(m, n, k=10):
   best_r = None
-  for s in range(10):
+  for s in range(k):
     r = optimize(m, n, s + 1338)
     if r.success:
       if not best_r:
@@ -114,4 +115,6 @@ def run(m, n):
       elif r.fun < best_r.fun:
         best_r = r
 
+  
+  # mpmath.identify(-best_r.x)
   return best_r

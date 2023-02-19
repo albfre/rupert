@@ -1,6 +1,7 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import math
 from projection import *
+import matplotlib.pyplot as plt
 
 def distance(p1, p2):
   return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))
@@ -54,6 +55,11 @@ def test_containment(polyhedron, q_angles, p_angles):
 def test_containment2(polyhedron, q_angles, p_angles):
   theta_q, phi_q = q_angles
   theta_p, phi_p = p_angles
+  n = 6
+  theta_q = round(theta_q, n)
+  phi_q = round(phi_q, n)
+  theta_p = round(theta_p, n)
+  phi_p = round(phi_p, n)
 
   points_q = project_to_plane(polyhedron, theta_q, phi_q)
   points_p = project_to_plane(polyhedron, theta_p, phi_p)
@@ -61,13 +67,132 @@ def test_containment2(polyhedron, q_angles, p_angles):
   p2 = Polygon(points_p, theta_p, phi_p)
   contains, largest_scaling, test = p1.contains(p2)
   if contains:
-    print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.7f}".format(largest_scaling))
-    print("{:.7f}".format(p1.alpha) + " & " + "{:.7f}".format(p1.translation[0]) + " & " + "{:.7f}".format(p1.translation[1]))
+    print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.8f}".format(largest_scaling))
+    print("{:.9f}".format(p1.alpha) + " & " + "{:.9f}".format(p1.translation[0]) + " & " + "{:.9f}".format(p1.translation[1]))
 
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with alpha=%s, translation=%s, scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, p1.alpha, p1.translation, largest_scaling))
+    #print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with alpha=%s, translation=%s, scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, p1.alpha, p1.translation, largest_scaling))
   else:
     print('No containment. %s' % largest_scaling)
   return contains, largest_scaling, p1.alpha, p1.translation
+
+def test_containment3(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
+  '''Verify that a solution works by explicit rotation, translation, and scaling'''
+  theta_q, phi_q = q_angles
+  theta_p, phi_p = p_angles
+
+  n = 6
+  theta_q = round(theta_q, n)
+  phi_q = round(phi_q, n)
+  theta_p = round(theta_p, n)
+  phi_p = round(phi_p, n)
+
+  n = 7
+  alpha = round(alpha, n)
+  u = round(u, n)
+  v = round(v, n)
+
+  points_q = project_to_plane(polyhedron, theta_q, phi_q)
+  points_p = project_to_plane(polyhedron, theta_p, phi_p)
+  points_p = rotate(points_p, alpha)
+  points_p = scale(points_p, s)
+  points_p = translate(points_p, u, v)
+  
+  p1 = Polygon(points_q, theta_q, phi_q)
+  p2 = Polygon(points_p, theta_p, phi_p)
+  contains = p1.contains2(p2)
+
+  if contains:
+    print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.8f}".format(s))
+    print("{:.8f}".format(alpha) + " & " + "{:.8f}".format(u) + " & " + "{:.8f}".format(v))
+
+def get_front(vertices, hull, edges):
+  except_hull = list(vertices - hull)
+  if len(except_hull) == 0:
+    return hull
+
+  front = {except_hull[0]}
+
+  def check_edge(v0, v1):
+    if v0 not in front or v1 in front or v1 in hull:
+      return False
+    front.add(v1)
+    return True
+
+  change = True
+  while change:
+    change = False
+    for v0, v1 in edges:
+      if check_edge(v0, v1) or check_edge(v1, v0):
+        change = True
+  return front.union(hull)
+
+def plot_polyhedron(edges, points, color):
+  all_points = set(range(len(points)))
+  q2d = Polygon(points)
+  hull = set(q2d.hull.vertices)
+  front = get_front(all_points, hull, edges)
+  back = (all_points - front).union(hull)
+
+  for v0, v1 in edges:
+    if v0 in front and v1 in front:
+      linetype = '-'
+    elif v0 in back and v1 in back:
+      linetype = ':'
+    else:
+      assert(False)
+    x0, y0 = points[v0]
+    x1, y1 = points[v1]
+    plt.plot([x0, x1], [y0, y1], color + linetype)
+
+def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1.0):
+  theta_q, phi_q = q_angles
+  theta_p, phi_p = p_angles
+
+  n = 6
+  theta_q = round(theta_q, n)
+  phi_q = round(phi_q, n)
+  theta_p = round(theta_p, n)
+  phi_p = round(phi_p, n)
+
+  n = 7
+  alpha = round(alpha, n)
+  u = round(u, n)
+  v = round(v, n)
+
+  if name == 'cube':
+    f = 0.69003891 #cube
+  else:
+    f = 1
+  points_q = project_to_plane(points, theta_q, phi_q)
+  points_p = project_to_plane(points, theta_p, phi_p)
+
+  points_q = rotate(points_q, -(1-f)*alpha)
+  points_p = rotate(points_p, f*alpha)
+
+  #points_p = scale(points_p, s)
+  points_p = translate(points_p, u, v)
+
+  p0 = points_p[0]
+  
+  hq = ConvexHull(points_q)
+  hp = ConvexHull(points_p)
+
+  plot_polyhedron(edges, points_q, 'r')
+  plot_polyhedron(edges, points_p, 'k')
+
+  p1 = Polygon(points_q, theta_q, phi_q)
+  p2 = Polygon(points_p, theta_p, phi_p)
+  contains = p1.contains2(p2)
+  print('Contains: %s' % contains)
+
+  plt.xticks([])
+  plt.yticks([])
+
+  ax = plt.gca()
+  ax.axis("off")
+  ax.axis('equal')
+  plt.savefig(name + '.eps', format='eps',bbox_inches='tight' )
+  plt.show()
 
 class Polygon:
   def __init__(self, points, theta=None, phi=None, phi_bar=None):
@@ -116,6 +241,26 @@ class Polygon:
         self.translation = (vertex[2], vertex[3]) if len(vertex) > 2 else (0.0, 0.0)
 
     return math.sqrt(largest_scaling_squared)
+
+  def contains2(self, other):
+    for i in range(len(self.vertex_points)):
+      x1, y1 = self.vertex_points[i]
+      x2, y2 = self.vertex_points[(i + 1) % len(self.vertex_points)]
+      
+      for x, y in other.vertex_points:
+        if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
+
+    return True
+
+    for a, b, offset in self.hull.equations: # j
+      assert(abs(offset) > 1e-9)
+      for x, y in other.vertex_points: # i
+        if (a * x + b * y)/offset > 1:
+          print('%s * %s + %s * %s = %s < %s' % (a, x, b, y, (a * x + b * y), offset))
+          print(str(self.hull.equations))
+          return False
+    return True
+    
 
   def contains(self, other):
     self.alpha = 0.0
