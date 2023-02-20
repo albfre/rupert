@@ -108,7 +108,7 @@ def test_containment3(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
 def get_front(vertices, hull, edges):
   except_hull = list(vertices - hull)
   if len(except_hull) == 0:
-    return hull
+    return {}
 
   front = {except_hull[0]}
 
@@ -124,22 +124,53 @@ def get_front(vertices, hull, edges):
     for v0, v1 in edges:
       if check_edge(v0, v1) or check_edge(v1, v0):
         change = True
-  return front.union(hull)
+  return front
 
 def plot_polyhedron(edges, points, color):
   all_points = set(range(len(points)))
   q2d = Polygon(points)
   hull = set(q2d.hull.vertices)
   front = get_front(all_points, hull, edges)
-  back = (all_points - front).union(hull)
+  back = (all_points - front)
+
+  visible_edges = []
 
   for v0, v1 in edges:
-    if v0 in front and v1 in front:
+    if v0 in front or v1 in front:
+      visible_edges.append((v0, v1))
+
+  for v0, v1 in edges:
+    if v0 in hull and v1 in hull:
+      intersects = False
+
+      for vis0, vis1 in visible_edges:
+        if intersects:
+          break
+        if v0 in [vis0, vis1] or v1 in [vis0, vis1]:
+          continue
+        p0 = points[v0]
+        p1 = points[v1]
+        q0 = points[vis0]
+        q1 = points[vis1]
+        #p0 + alpha * p1 == q0 + beta * q1
+        #p0[0] + alpha * p1[0] == q0[0] + beta * q1[0]
+        #p0[1] + alpha * p1[1] == q0[1] + beta * q1[1]
+        #p0[1] + p1[1] * (q0[0] + beta * q1[0] - p0[0]) / p1[0] == q0[1] + beta * q1[1]
+        #p0[1] + p1[1] * q0[0] / p1[0] + (p1[1] * q1[0] / p1[0] - q1[1] ) * beta - p1[1] * p0[0] / p1[0] == q0[0]
+        beta = (q0[0] + p1[1] * p0[0] / p1[0] - p0[1] - p1[1] * q0[0] / p1[0] ) / (p1[1] * q1[0] / p1[0] + q1[1])
+        alpha = (q0[0] + beta * q1[0] - p0[0]) / p1[0]
+        if beta >= 0 and beta <= 1 and alpha >= 0 and alpha <= 1:
+          intersects = True
+      if not intersects:
+        visible_edges.append((v0, v1))
+
+
+
+  for v0, v1 in edges:
+    if (v0, v1) in visible_edges:
       linetype = '-'
-    elif v0 in back and v1 in back:
-      linetype = ':'
     else:
-      assert(False)
+      linetype = ':'
     x0, y0 = points[v0]
     x1, y1 = points[v1]
     plt.plot([x0, x1], [y0, y1], color + linetype)
@@ -177,7 +208,7 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   hq = ConvexHull(points_q)
   hp = ConvexHull(points_p)
 
-  plot_polyhedron(edges, points_q, 'r')
+  #plot_polyhedron(edges, points_q, 'r')
   plot_polyhedron(edges, points_p, 'k')
 
   p1 = Polygon(points_q, theta_q, phi_q)
@@ -191,7 +222,7 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   ax = plt.gca()
   ax.axis("off")
   ax.axis('equal')
-  plt.savefig(name + '.eps', format='eps',bbox_inches='tight' )
+  #plt.savefig(name + '.eps', format='eps',bbox_inches='tight' )
   plt.show()
 
 class Polygon:

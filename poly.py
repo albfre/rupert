@@ -281,20 +281,21 @@ def test_cont2():
 def plot_poly():
 
     name, points, faces, edges = read_polyhedron('Catalan/01TriakisTetrahedron.txt')
-    plot_containment(name, points, edges, [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
+    #plot_containment(name, points, edges, [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
+    plot_containment(name, points, edges, [1.34810735, 2.35615010], [math.pi/3, 0.51723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
 
     name, points, faces, edges = read_polyhedron('Catalan/07LpentagonalIcositetrahedron.txt')
-    plot_containment(name, points, edges, [2.3301605, 3.0267874], [0.4660288, 1.46766889],  2.325648663 , 0.000619928 , 0.002845302, 1.000436)
+    #plot_containment(name, points, edges, [2.3301605, 3.0267874], [0.4660288, 1.46766889],  2.325648663 , 0.000619928 , 0.002845302, 1.000436)
 
     points = cube()
     edges = find_edges(points, 2)
-    plot_containment('cube', points,edges, [2*math.pi + -4.63638229e-01,  8.41065611e-01], [ 5.42866038e+00, 0 ],1.038015373, 0,0,1.0606601)
+    #plot_containment('cube', points,edges, [2*math.pi + -4.63638229e-01,  8.41065611e-01], [ 5.42866038e+00, 0 ],1.038015373, 0,0,1.0606601)
 
 
     name, points, faces, edges = read_polyhedron('Johnson/TriaugmentedTruncatedDodecahedron.txt')
-    plot_containment(name, points, edges, [3.41783398253844, math.acos(-0.9152295760)], [0.789632179442, math.acos(-0.00051359417)],2.4444757 , 0.0045658 , -0.0039431 , 1.000598) # J71 1.000598658
+    #plot_containment(name, points, edges, [3.41783398253844, math.acos(-0.9152295760)], [0.789632179442, math.acos(-0.00051359417)],2.4444757 , 0.0045658 , -0.0039431 , 1.000598) # J71 1.000598658
 
 
     # j76
     name, points, faces, edges = read_polyhedron('Johnson/DiminishedRhombicosidodecahedron.txt')
-    plot_containment(name, points,edges, [4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269)
+    #plot_containment(name, points,edges, [4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269)
