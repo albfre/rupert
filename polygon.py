@@ -1,7 +1,9 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
+import numpy as np
 import math
 from projection import *
 import matplotlib.pyplot as plt
+import matplotlib
 
 def distance(p1, p2):
   return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))
@@ -131,14 +133,15 @@ def plot_polyhedron(edges, points, color):
   q2d = Polygon(points)
   hull = set(q2d.hull.vertices)
   front = get_front(all_points, hull, edges)
-  back = (all_points - front)
 
   visible_edges = []
 
+  # Edges with a vertex in the front are visible
   for v0, v1 in edges:
     if v0 in front or v1 in front:
       visible_edges.append((v0, v1))
 
+  # Edges on the hull that do not intersect a visible edge are visible
   for v0, v1 in edges:
     if v0 in hull and v1 in hull:
       intersects = False
@@ -148,23 +151,24 @@ def plot_polyhedron(edges, points, color):
           break
         if v0 in [vis0, vis1] or v1 in [vis0, vis1]:
           continue
-        p0 = points[v0]
-        p1 = points[v1]
-        q0 = points[vis0]
-        q1 = points[vis1]
-        #p0 + alpha * p1 == q0 + beta * q1
-        #p0[0] + alpha * p1[0] == q0[0] + beta * q1[0]
-        #p0[1] + alpha * p1[1] == q0[1] + beta * q1[1]
-        #p0[1] + p1[1] * (q0[0] + beta * q1[0] - p0[0]) / p1[0] == q0[1] + beta * q1[1]
-        #p0[1] + p1[1] * q0[0] / p1[0] + (p1[1] * q1[0] / p1[0] - q1[1] ) * beta - p1[1] * p0[0] / p1[0] == q0[0]
-        beta = (q0[0] + p1[1] * p0[0] / p1[0] - p0[1] - p1[1] * q0[0] / p1[0] ) / (p1[1] * q1[0] / p1[0] + q1[1])
-        alpha = (q0[0] + beta * q1[0] - p0[0]) / p1[0]
-        if beta >= 0 and beta <= 1 and alpha >= 0 and alpha <= 1:
-          intersects = True
+        x1, y1 = points[v0]
+        x2, y2 = points[v1]
+        x3, y3 = points[vis0]
+        x4, y4 = points[vis1]
+
+        # (x2 - x1) * alpha - (x4 - x3) * beta = x3 - x1
+        # (y2 - y1) * alpha - (y4 - y3) * beta = y3 - y1
+        m = np.array([[x2 - x1, x3 - x4],[y2 - y1, y3 - y4]])
+        rhs = [x3 - x1, y3 - y1]
+        try:
+          a,b = np.linalg.solve(m, rhs)
+          eps = 1e-9
+          if b > eps and b < 1 - eps and a > eps and a < 1 - eps:
+            intersects = True
+        except np.linalg.LinAlgError:
+          pass
       if not intersects:
         visible_edges.append((v0, v1))
-
-
 
   for v0, v1 in edges:
     if (v0, v1) in visible_edges:
@@ -194,13 +198,15 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
     f = 0.69003891 #cube
   else:
     f = 1
+  if 'cube' in name:
+    s = 1
   points_q = project_to_plane(points, theta_q, phi_q)
   points_p = project_to_plane(points, theta_p, phi_p)
 
   points_q = rotate(points_q, -(1-f)*alpha)
   points_p = rotate(points_p, f*alpha)
 
-  #points_p = scale(points_p, s)
+  points_p = scale(points_p, s)
   points_p = translate(points_p, u, v)
 
   p0 = points_p[0]
@@ -208,7 +214,7 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   hq = ConvexHull(points_q)
   hp = ConvexHull(points_p)
 
-  #plot_polyhedron(edges, points_q, 'r')
+  plot_polyhedron(edges, points_q, 'r')
   plot_polyhedron(edges, points_p, 'k')
 
   p1 = Polygon(points_q, theta_q, phi_q)
@@ -221,8 +227,43 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
 
   ax = plt.gca()
   ax.axis("off")
-  ax.axis('equal')
-  #plt.savefig(name + '.eps', format='eps',bbox_inches='tight' )
+  name = name.replace('(laevo)', '')
+
+  title_name = name[0] + name[1:].lower()
+  title_name = title_name.replace('(j', '(J')
+
+  #if 'cube' not in name:
+    #plt.title(title_name)
+
+  name = name.replace(' ', '')
+  if '(' in name:
+    name = name[:name.index('(')]
+  
+  if 'cube' in name:
+    min_x = min(x for x,y in points_p)
+    min_y = min(y for x,y in points_p)
+    print('min %s %s' % (min_x, min_y))
+
+    max_x = max(x for x,y in points_p)
+    max_y = max(y for x,y in points_p)
+    print('max %s %s' % (max_x, max_y))
+
+    min_x = min(x for x,y in points_q)
+    min_y = min(y for x,y in points_q)
+    print('min %s %s' % (min_x, min_y))
+
+    max_x = max(x for x,y in points_q)
+    max_y = max(y for x,y in points_q)
+    print('max %s %s' % (max_x, max_y))
+    ax.axis([-2,2,-2,2])
+    ax.set_aspect('equal')
+
+    k = 2
+    bbox = matplotlib.transforms.Bbox([[1.3,0.5],[5.2,4.3]])
+    plt.savefig(name + '.eps', format='eps', bbox_inches='tight')
+  else:
+    ax.axis('equal')
+    plt.savefig(name + '.eps', format='eps', bbox_inches='tight' )
   plt.show()
 
 class Polygon:

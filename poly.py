@@ -245,6 +245,8 @@ def test_time():
 
 
 def test_cont():
+    ''' Test of containment printing the results in a Latex-friendly manner '''
+
     # Catalan 2
     test_containment2(read_file('Catalan/01TriakisTetrahedron.txt')[1], [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402]) # 1.0000040769 NM optimize
     test_containment2(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301605, 3.0267874], [0.4660288, 1.46766889]) # 1.0004360874 optimize
@@ -259,6 +261,8 @@ def test_cont():
 
 
 def test_cont2():
+    ''' Test of containment using explicit rotation and translation '''
+
     # Catalan 2
     print('triakis')
     test_containment3(read_file('Catalan/01TriakisTetrahedron.txt')[1], [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
@@ -279,23 +283,30 @@ def test_cont2():
     test_containment3(read_file('Johnson/DiminishedRhombicosidodecahedron.txt')[1],[4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269) # J76 1.0002693188
 
 def plot_poly():
-
-    name, points, faces, edges = read_polyhedron('Catalan/01TriakisTetrahedron.txt')
-    #plot_containment(name, points, edges, [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
-    plot_containment(name, points, edges, [1.34810735, 2.35615010], [math.pi/3, 0.51723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
-
-    name, points, faces, edges = read_polyhedron('Catalan/07LpentagonalIcositetrahedron.txt')
-    #plot_containment(name, points, edges, [2.3301605, 3.0267874], [0.4660288, 1.46766889],  2.325648663 , 0.000619928 , 0.002845302, 1.000436)
-
+    ''' Plot of the solutions '''
     points = cube()
     edges = find_edges(points, 2)
-    #plot_containment('cube', points,edges, [2*math.pi + -4.63638229e-01,  8.41065611e-01], [ 5.42866038e+00, 0 ],1.038015373, 0,0,1.0606601)
+    plot_containment('cube1', points,edges, [math.pi/4, 0.955316], [ 0, 0 ],0, 0,0,1.0606601)
+    plot_containment('cube', points,edges, [2*math.pi + -4.63638229e-01,  8.41065611e-01], [ 5.42866038e+00, 0 ],1.038015373, 0,0,1.0606601)
 
+    if True:
+      name, points, faces, edges = read_polyhedron('Catalan/01TriakisTetrahedron.txt')
+      plot_containment(name, points, edges, [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402], 2*math.pi-0.016082216 , 0.000140808 , -0.000002238, 1.000004) # 1.0000040769 NM optimize
 
-    name, points, faces, edges = read_polyhedron('Johnson/TriaugmentedTruncatedDodecahedron.txt')
-    #plot_containment(name, points, edges, [3.41783398253844, math.acos(-0.9152295760)], [0.789632179442, math.acos(-0.00051359417)],2.4444757 , 0.0045658 , -0.0039431 , 1.000598) # J71 1.000598658
+      name, points, faces, edges = read_polyhedron('Catalan/07LpentagonalIcositetrahedron.txt')
+      plot_containment(name, points, edges, [2.3301605, 3.0267874], [0.4660288, 1.46766889],  2.325648663 , 0.000619928 , 0.002845302, 1.000436)
 
+      name, points, faces, edges = read_polyhedron('Johnson/GyroelongatedPentagonalRotunda.txt')
+      plot_containment(name + ' (J25)', points, edges, [1.5697500508, math.acos(0.516259456)], [3.44208101, math.acos(-0.1893870555)] , 0.0031319 , 0.0013265 , -0.0541425, 1.000089) # J25 1.0000894999 optimize
 
-    # j76
-    name, points, faces, edges = read_polyhedron('Johnson/DiminishedRhombicosidodecahedron.txt')
-    #plot_containment(name, points,edges, [4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269)
+      name, points, faces, edges = read_polyhedron('Johnson/GyroelongatedSquareBicupola.txt')
+      plot_containment(name + ' (J45)', points, edges, [4.71940540634669, math.acos(-0.57234816598)], [3.148896509339, math.acos(0.002509670578455)], 0.0040334 , -0.0017357 , 0.0774202, 1.000009 ) # J45 1.00000956 optimize
+
+      name, points, faces, edges = read_polyhedron('Johnson/GyroelongatedPentagonalCupolarotunda.txt')
+      plot_containment(name + ' (J47)', points, edges, [3.4528520562794, math.acos(-0.42733970469)], [3.4424819869, math.acos(-0.19547975499)],0.0013670 , 0.0005797 , -0.0330901, 1.000080 ) # J47 1.00008028 optimize
+
+      name, points, faces, edges = read_polyhedron('Johnson/TriaugmentedTruncatedDodecahedron.txt')
+      plot_containment(name + ' (J71)', points, edges, [3.41783398253844, math.acos(-0.9152295760)], [0.789632179442, math.acos(-0.00051359417)],2.4444757 , 0.0045658 , -0.0039431 , 1.000598) # J71 1.000598658
+
+      name, points, faces, edges = read_polyhedron('Johnson/DiminishedRhombicosidodecahedron.txt')
+      plot_containment(name + ' (J76)', points,edges, [4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269) # J76
