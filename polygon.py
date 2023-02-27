@@ -2,8 +2,6 @@ from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import numpy as np
 import math
 from projection import *
-import matplotlib.pyplot as plt
-import matplotlib
 
 def distance(p1, p2):
   return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))
@@ -36,48 +34,21 @@ def box(points):
   return [min_point, max_point, [min_point[0], max_point[1]], [max_point[0], min_point[1]]]
 
 def test_containment(polyhedron, q_angles, p_angles):
-  theta_q, phi_bar_q = q_angles
-  theta_p, phi_bar_p = p_angles
-  phi_q = math.acos(phi_bar_q)
-  phi_p = math.acos(phi_bar_p)
-
-  points_q = project_to_plane(polyhedron, theta_q, phi_q)
-  points_p = project_to_plane(polyhedron, theta_p, phi_p)
-  p1 = Polygon(points_q, theta_q, phi_q, phi_bar_q)
-  p2 = Polygon(points_p, theta_p, phi_p, phi_bar_p)
-  contains, largest_scaling, test = p1.contains(p2)
-  #print(str(p1.hull.vertices))
-  #print(str(p2.hull.vertices))
-  if contains:
-    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, largest_scaling))
-  else:
-    print('No containment. %s' % largest_scaling)
-  return contains, largest_scaling, p1.alpha, p1.translation
-
-def test_containment2(polyhedron, q_angles, p_angles):
   theta_q, phi_q = q_angles
   theta_p, phi_p = p_angles
-  #n = 6
-  #theta_q = round(theta_q, n)
-  #phi_q = round(phi_q, n)
-  #theta_p = round(theta_p, n)
-  #phi_p = round(phi_p, n)
 
   points_q = project_to_plane(polyhedron, theta_q, phi_q)
   points_p = project_to_plane(polyhedron, theta_p, phi_p)
   p1 = Polygon(points_q, theta_q, phi_q)
   p2 = Polygon(points_p, theta_p, phi_p)
-  contains, largest_scaling, test = p1.contains(p2)
+  contains, largest_scaling = p1.contains(p2)
   if contains:
-    print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.8f}".format(largest_scaling))
-    print("{:.9f}".format(p1.alpha) + " & " + "{:.9f}".format(p1.translation[0]) + " & " + "{:.9f}".format(p1.translation[1]))
-
     print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with alpha=%s, translation=%s, scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, p1.alpha, p1.translation, largest_scaling))
   else:
     print('No containment. %s' % largest_scaling)
   return contains, largest_scaling, p1.alpha, p1.translation
 
-def test_containment3(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
+def test_containment_explicit(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
   '''Verify that a solution works by explicit rotation, translation, and scaling'''
   theta_q, phi_q = q_angles
   theta_p, phi_p = p_angles
@@ -104,167 +75,11 @@ def test_containment3(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
   contains = p1.contains2(p2)
 
   if contains:
+    print('Contains')
     print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.8f}".format(s))
     print("{:.8f}".format(alpha) + " & " + "{:.8f}".format(u) + " & " + "{:.8f}".format(v))
-
-def get_front(vertices, hull, edges):
-  except_hull = list(vertices - hull)
-  if len(except_hull) == 0:
-    return {}
-
-  front = {except_hull[0]}
-
-  def check_edge(v0, v1):
-    if v0 not in front or v1 in front or v1 in hull:
-      return False
-    front.add(v1)
-    return True
-
-  change = True
-  while change:
-    change = False
-    for v0, v1 in edges:
-      if check_edge(v0, v1) or check_edge(v1, v0):
-        change = True
-  return front
-
-def plot_polyhedron(edges, points, color):
-  all_points = set(range(len(points)))
-  q2d = Polygon(points)
-  hull = set(q2d.hull.vertices)
-  front = get_front(all_points, hull, edges)
-
-  visible_edges = []
-
-  # Edges with a vertex in the front are visible
-  for v0, v1 in edges:
-    if v0 in front or v1 in front:
-      visible_edges.append((v0, v1))
-
-  # Edges on the hull that do not intersect a visible edge are visible
-  for v0, v1 in edges:
-    if v0 in hull and v1 in hull:
-      intersects = False
-
-      for vis0, vis1 in visible_edges:
-        if intersects:
-          break
-        if v0 in [vis0, vis1] or v1 in [vis0, vis1]:
-          continue
-        x1, y1 = points[v0]
-        x2, y2 = points[v1]
-        x3, y3 = points[vis0]
-        x4, y4 = points[vis1]
-
-        # (x2 - x1) * alpha - (x4 - x3) * beta = x3 - x1
-        # (y2 - y1) * alpha - (y4 - y3) * beta = y3 - y1
-        m = np.array([[x2 - x1, x3 - x4],[y2 - y1, y3 - y4]])
-        rhs = [x3 - x1, y3 - y1]
-        try:
-          a,b = np.linalg.solve(m, rhs)
-          eps = 1e-9
-          if b > eps and b < 1 - eps and a > eps and a < 1 - eps:
-            intersects = True
-        except np.linalg.LinAlgError:
-          pass
-      if not intersects:
-        visible_edges.append((v0, v1))
-
-  for v0, v1 in edges:
-    if (v0, v1) in visible_edges:
-      linetype = '-'
-    else:
-      linetype = ':'
-    x0, y0 = points[v0]
-    x1, y1 = points[v1]
-    plt.plot([x0, x1], [y0, y1], color + linetype)
-
-def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1.0):
-  theta_q, phi_q = q_angles
-  theta_p, phi_p = p_angles
-
-  n = 6
-  theta_q = round(theta_q, n)
-  phi_q = round(phi_q, n)
-  theta_p = round(theta_p, n)
-  phi_p = round(phi_p, n)
-
-  n = 7
-  alpha = round(alpha, n)
-  u = round(u, n)
-  v = round(v, n)
-
-  if name == 'cube':
-    f = 0.69003891 #cube
   else:
-    f = 1
-  if 'cube' in name:
-    s = 1
-  points_q = project_to_plane(points, theta_q, phi_q)
-  points_p = project_to_plane(points, theta_p, phi_p)
-
-  points_q = rotate(points_q, -(1-f)*alpha)
-  points_p = rotate(points_p, f*alpha)
-
-  points_p = scale(points_p, s)
-  points_p = translate(points_p, u, v)
-
-  p0 = points_p[0]
-  
-  hq = ConvexHull(points_q)
-  hp = ConvexHull(points_p)
-
-  plot_polyhedron(edges, points_q, 'r')
-  plot_polyhedron(edges, points_p, 'k')
-
-  p1 = Polygon(points_q, theta_q, phi_q)
-  p2 = Polygon(points_p, theta_p, phi_p)
-  contains = p1.contains2(p2)
-  print('Contains: %s' % contains)
-
-  plt.xticks([])
-  plt.yticks([])
-
-  ax = plt.gca()
-  ax.axis("off")
-  name = name.replace('(laevo)', '')
-
-  title_name = name[0] + name[1:].lower()
-  title_name = title_name.replace('(j', '(J')
-
-  #if 'cube' not in name:
-    #plt.title(title_name)
-
-  name = name.replace(' ', '')
-  if '(' in name:
-    name = name[:name.index('(')]
-  
-  if 'cube' in name:
-    min_x = min(x for x,y in points_p)
-    min_y = min(y for x,y in points_p)
-    print('min %s %s' % (min_x, min_y))
-
-    max_x = max(x for x,y in points_p)
-    max_y = max(y for x,y in points_p)
-    print('max %s %s' % (max_x, max_y))
-
-    min_x = min(x for x,y in points_q)
-    min_y = min(y for x,y in points_q)
-    print('min %s %s' % (min_x, min_y))
-
-    max_x = max(x for x,y in points_q)
-    max_y = max(y for x,y in points_q)
-    print('max %s %s' % (max_x, max_y))
-    ax.axis([-2,2,-2,2])
-    ax.set_aspect('equal')
-
-    k = 2
-    bbox = matplotlib.transforms.Bbox([[1.3,0.5],[5.2,4.3]])
-    plt.savefig(name + '.eps', format='eps', bbox_inches='tight')
-  else:
-    ax.axis('equal')
-    plt.savefig(name + '.eps', format='eps', bbox_inches='tight' )
-  plt.show()
+    print('No containment')
 
 class Polygon:
   def __init__(self, points, theta=None, phi=None, phi_bar=None):
@@ -314,7 +129,21 @@ class Polygon:
 
     return math.sqrt(largest_scaling_squared)
 
+  def contains(self, other):
+    self.alpha = 0.0
+    self.translation = (0.0, 0.0)
+    if self.perimeter < other.perimeter: return False, 0.0
+    if self.diameter < other.diameter: return False, 0.0
+    if self.area < other.area: return False, 0.0
+
+    if self.box and not self.box.contains(other):
+      return False, 0.0
+
+    largest_scaling = self.compute_largest_scaling(other) 
+    return largest_scaling > 1.0 + 1e-14, largest_scaling
+
   def contains2(self, other):
+    ''' Check containment by checking that the points of other are all on the same side of the lines of this '''
     for i in range(len(self.vertex_points)):
       x1, y1 = self.vertex_points[i]
       x2, y2 = self.vertex_points[(i + 1) % len(self.vertex_points)]
@@ -324,17 +153,3 @@ class Polygon:
 
     return True
 
-  def contains(self, other):
-    self.alpha = 0.0
-    self.translation = (0.0, 0.0)
-    test = [self.perimeter < other.perimeter, self.diameter < other.diameter, self.area < other.area, False]
-    if self.perimeter < other.perimeter: return False, 0.0, test
-    if self.diameter < other.diameter: return False, 0.0, test
-    if self.area < other.area: return False, 0.0, test
-
-    if self.box and not self.box.contains(other):
-      test[3] = True
-      return False, 0.0, test
-
-    largest_scaling = self.compute_largest_scaling(other) 
-    return largest_scaling > 1.0 + 1e-14, largest_scaling, test

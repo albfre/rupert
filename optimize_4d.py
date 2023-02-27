@@ -82,15 +82,15 @@ def optimize(obj, x0):
 # maximize scaling
 # theta, phi
 
-  #method = 'Nelder-Mead' # SLSQP
+  method = 'Nelder-Mead' # SLSQP
   #method = 'L-BFGS-B' # SLSQP # bfgs: triakis 200s, pentagonal
-  method = 'SLSQP' # SLSQP # bfgs: triakis 200s, pentagonal
+  #method = 'SLSQP' # SLSQP # bfgs: triakis 200s, pentagonal
   jac = None if method == 'Nelder-Mead' else '3-point'
 
   constraints = []
   cons = []
 
-  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-9)
+  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints)
   return res
 
 def optimize_inner(q, p, gradient_descent, x0):
@@ -125,7 +125,7 @@ def find_trajectory(p):
     q = p
     r = optimize_inner(q, p, False, angles[0])
     theta_q, phi_q, theta_p, phi_p = r.x
-    contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+    contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, phi_q], [theta_p, phi_p])
     if contains:
       angles = [(theta_q, phi_q, theta_p, phi_p)]
     else:
@@ -178,7 +178,7 @@ def run(p=None, n=1, gradient_descent=False, early_return=False):
       for r in result:
         theta_q, phi_q, theta_p, phi_p = r.x
         try:
-          contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
+          contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, phi_q], [theta_p, phi_p])
           if contains:
             print('contains')
             if largest_scaling > best_scaling:
