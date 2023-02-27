@@ -57,11 +57,11 @@ def test_containment(polyhedron, q_angles, p_angles):
 def test_containment2(polyhedron, q_angles, p_angles):
   theta_q, phi_q = q_angles
   theta_p, phi_p = p_angles
-  n = 6
-  theta_q = round(theta_q, n)
-  phi_q = round(phi_q, n)
-  theta_p = round(theta_p, n)
-  phi_p = round(phi_p, n)
+  #n = 6
+  #theta_q = round(theta_q, n)
+  #phi_q = round(phi_q, n)
+  #theta_p = round(theta_p, n)
+  #phi_p = round(phi_p, n)
 
   points_q = project_to_plane(polyhedron, theta_q, phi_q)
   points_p = project_to_plane(polyhedron, theta_p, phi_p)
@@ -72,7 +72,7 @@ def test_containment2(polyhedron, q_angles, p_angles):
     print("{:.7f}".format(p2.theta) + " & " + "{:.7f}".format(p2.phi) + " & " + "{:.7f}".format(p1.theta) + " & " + "{:.7f}".format(p1.phi) + " & " + "{:.8f}".format(largest_scaling))
     print("{:.9f}".format(p1.alpha) + " & " + "{:.9f}".format(p1.translation[0]) + " & " + "{:.9f}".format(p1.translation[1]))
 
-    #print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with alpha=%s, translation=%s, scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, p1.alpha, p1.translation, largest_scaling))
+    print('(t,p) = (%s, %s) contains (t,p) = (%s, %s) with alpha=%s, translation=%s, scaling=%s' % (p1.theta, p1.phi, p2.theta, p2.phi, p1.alpha, p1.translation, largest_scaling))
   else:
     print('No containment. %s' % largest_scaling)
   return contains, largest_scaling, p1.alpha, p1.translation
@@ -323,16 +323,6 @@ class Polygon:
         if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
 
     return True
-
-    for a, b, offset in self.hull.equations: # j
-      assert(abs(offset) > 1e-9)
-      for x, y in other.vertex_points: # i
-        if (a * x + b * y)/offset > 1:
-          print('%s * %s + %s * %s = %s < %s' % (a, x, b, y, (a * x + b * y), offset))
-          print(str(self.hull.equations))
-          return False
-    return True
-    
 
   def contains(self, other):
     self.alpha = 0.0

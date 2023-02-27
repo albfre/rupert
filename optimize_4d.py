@@ -82,15 +82,15 @@ def optimize(obj, x0):
 # maximize scaling
 # theta, phi
 
-  method = 'Nelder-Mead' # SLSQP
-  method = 'L-BFGS-B' # SLSQP # bfgs: triakis 200s, pentagonal
+  #method = 'Nelder-Mead' # SLSQP
+  #method = 'L-BFGS-B' # SLSQP # bfgs: triakis 200s, pentagonal
   method = 'SLSQP' # SLSQP # bfgs: triakis 200s, pentagonal
   jac = None if method == 'Nelder-Mead' else '3-point'
 
   constraints = []
   cons = []
 
-  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints)
+  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-9)
   return res
 
 def optimize_inner(q, p, gradient_descent, x0):

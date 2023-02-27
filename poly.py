@@ -187,6 +187,7 @@ def run():
     test_containment(truncated_icosidodecahedron(), [0.4969429976, -0.677999666], [2.20601622382, 1.0]) # 1.0020658
     test_containment(truncated_icosidodecahedron(), [2.36509185, -0.97004261197], [3.64351629088, 1.0]) # 1.00206596 optimize
     # snub dodecahedron
+    #(3.5464272875133513, 2.541668861004088) contains (t,p) = (3.70287224436372, 1.7950400987173274) with scaling=1.0000000000000113
 
 
     # New results:
@@ -246,10 +247,15 @@ def test_time():
 
 def test_cont():
     ''' Test of containment printing the results in a Latex-friendly manner '''
+    #test_containment2(cube(), [2.0344439250146626, 0.8410686890177368], [-0.017879326712796725, 0.0]) #
 
     # Catalan 2
     test_containment2(read_file('Catalan/01TriakisTetrahedron.txt')[1], [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402]) # 1.0000040769 NM optimize
     test_containment2(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301605, 3.0267874], [0.4660288, 1.46766889]) # 1.0004360874 optimize
+    test_containment2(snub_cube(), [3.5464272875133513, 2.541668861004088],[3.70287224436372, 1.7950400987173274]) #scaling=1.0000000000000113
+
+    test_containment2(snub_cube(), [1.3551901496426084, 1.0421671566197346],[2.7904829084468186, 2.57457493794408]) #scaling=1.0000000000000113
+#=0.40967322887262264, translation=(-3.729437901847462e-15, -5.225145686033035e-14), scaling=1.0000000000000118
 
     if True: 
       # Johnson 4
@@ -259,6 +265,11 @@ def test_cont():
       test_containment2(read_file('Johnson/TriaugmentedTruncatedDodecahedron.txt')[1], [3.41783398253844, math.acos(-0.9152295760)], [0.789632179442, math.acos(-0.00051359417)]) # J71 1.000598658
       test_containment2(read_file('Johnson/DiminishedRhombicosidodecahedron.txt')[1],[4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)]) # J76 1.0002693188
 
+def test_snub():
+    test_containment2(snub_cube(), [2.6122362440845954, 1.8314668919060075],[5.198357261240355, 0.5845266568498758] ) #scaling=1.0000000000000133
+
+    print('test3')
+    test_containment3(snub_cube(), [2.6122362440845954, 1.8314668919060075],[5.198357261240355, 0.5845266568498758], -1.1558523612574354,1.2475136847835387e-14, -3.64224728843713e-15, 1) #=1.0000000000000133
 
 def test_cont2():
     ''' Test of containment using explicit rotation and translation '''
@@ -269,6 +280,11 @@ def test_cont2():
 
     print('pentagonal')
     test_containment3(read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1], [2.3301605, 3.0267874], [0.4660288, 1.46766889],  2.325648663 , 0.000619928 , 0.002845302, 1.000436)
+
+    print('snub cube')
+    test_containment3(snub_cube(), [3.5464272875133513, 2.541668861004088],[3.70287224436372, 1.7950400987173274], 1.910743879, 0,0, 1.00000000000001) #scaling=1.0000000000000113
+    test_containment3(snub_cube(), [1.3551901496426084, 1.0421671566197346],[2.7904829084468186, 2.57457493794408], 0.40967322887262264,-3.729437901847462e-15, -5.225145686033035e-14,1.0000000000000 ) #scaling=1.0000000000000113
+#=, translation=(), scaling=1.0000000000000118
 
     # Johnson 4
     print('j25')
