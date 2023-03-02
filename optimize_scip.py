@@ -52,13 +52,13 @@ def project_to_plane_transformed(points, theta, phi):
 def rotate_transformed(points, alpha):
   ca = cos_transformed(alpha)
   sa = sin_transformed(alpha)
-  return [[ca * p[0] - sa * p[1],   sa * p[0] + ca * p[1]] for p in points]
+  return [[ca * p[0] - sa * p[1], sa * p[0] + ca * p[1]] for p in points]
 
 def project_to_plane_transformed2(points, st, ct, sp, cp):
   return [[-st * p[0] + ct * p[1], -ct * cp * p[0] - st * cp * p[1] + sp * p[2]] for p in points]
 
 def rotate_transformed2(points, sa, ca):
-  return [[ca * p[0] - sa * p[1],   sa * p[0] + ca * p[1]] for p in points]
+  return [[ca * p[0] - sa * p[1], sa * p[0] + ca * p[1]] for p in points]
 
 def constraints_fun_ij(x, qs, ps, i, j):
   assert(len(x) == 6)
@@ -114,13 +114,11 @@ def containment_determinant_angles(x, qs, ps, i, j):
   det = (q1[0] - p[0]) * (q0[1] - p[1]) - (q0[0] - p[0]) * (q1[1] - p[1])
   return det
 
-
 def objective(x):
   return x[-1]
 
 def get_angle3(s):
   angle1 = math.asin(s)
-
   return angle1
 
 def get_angle(s, c):
@@ -273,10 +271,6 @@ def optimize2(q, ps, x0=None): # q is a silhouette of p
   contains = test_containment(ps, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   return x
 
-    
-
-  
-
 def optimize(q, ps, x0=None): # q is a silhouette of p
 # variables:
 # q: theta_q, phi_q
@@ -311,7 +305,6 @@ def optimize(q, ps, x0=None): # q is a silhouette of p
   model.optimize()
   sol = model.getBestSol()
 
-  
   def get_vals(y):
     return tuple(math.asin(sin_transformed(x)) for x in y)
     
@@ -319,7 +312,6 @@ def optimize(q, ps, x0=None): # q is a silhouette of p
 
   contains = test_containment(ps, [theta_q, math.cos(phi_q)], [theta_p, math.cos(phi_p)])
   return contains
-
 
 def get_silhouette(polyhedron, theta, phi):
   points_2d = project_to_plane(polyhedron, theta, phi)
@@ -329,7 +321,6 @@ def get_silhouette(polyhedron, theta, phi):
   min_index = vertices.index(min_vertex)
   vertices = vertices[min_index:] + vertices[:min_index]
   return tuple(vertices)
-
 
 def get_silhouettes(polyhedron):
   n = 100
@@ -371,7 +362,6 @@ def get_t(angle):
   #print(str((t1, t2, t3, t4)))
   #print(str((sin_transformed(t1), sin_transformed(t2), cos_transformed(t3), cos_transformed(t4))))
   return t
-
 
 def test_cube():
   x0 = (get_t(4.918788-math.pi), get_t(2.0545287), get_t(0.8553414), get_t(2.108091)) # dodecahedron
@@ -418,7 +408,6 @@ def test_cube():
       print(str(containment_determinant(x, q, ps, i, j)))
       #print(str(containment_determinant_angles(x_angles, q, ps, i, j)))
 
-
 def test_x(x):
   p = cube()
   (st_q, ct_q, st_p, ct_p, sp_q, cp_q, sp_p, cp_p, salpha, calpha, t) = x
@@ -444,7 +433,6 @@ def test_x(x):
   for j in range(len(ps)):
     for i in range(len(q)):
       print(str(containment_determinant(x, q, ps, i, j)))
-
 
 def run():
   q = [(-1,-1,1), (-1,1,-1), (-1,1,1), (1,-1,-1),(1,-1,1),(1,1,-1)]
@@ -484,4 +472,3 @@ def run():
         #any_contains = any_contains or contains
         ii += 1
   return x
-

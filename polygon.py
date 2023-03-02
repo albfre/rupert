@@ -82,12 +82,11 @@ def test_containment_explicit(polyhedron, q_angles, p_angles, alpha, u, v, s = 1
     print('No containment')
 
 class Polygon:
-  def __init__(self, points, theta=None, phi=None, phi_bar=None):
+  def __init__(self, points, theta=None, phi=None):
     assert(all(len(p) == 2 for p in points))
     self.points = points
     self.theta = theta
     self.phi = phi
-    self.phi_bar = phi_bar
 
     self.hull = ConvexHull(points)
 
@@ -95,7 +94,7 @@ class Polygon:
     self.perimeter = sum(distance(points[simplex[0]], points[simplex[1]]) for simplex in self.hull.simplices)
     self.diameter = diameter(self.vertex_points)
     self.area = area(self.vertex_points)
-    self.box = None if len(self.vertex_points) <= 16 else Polygon(box(self.vertex_points), theta, phi, phi_bar)
+    self.box = None if len(self.vertex_points) <= 16 else Polygon(box(self.vertex_points), theta, phi)
     self.largest_vertex = None
     self.is_centrally_symmetric = True
 

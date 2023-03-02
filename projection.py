@@ -66,11 +66,8 @@ def plot(points, hull):
 
   plt.show()
 
-
 def dist2(a, b):
-  d = 0.0
-  for x, y in zip(a, b):
-    d += (x - y) * (x - y)
+  d = sum((x - y) * (x - y) for x, y in zip(a, b))
   return math.sqrt(d)
 
 def expand(c, alpha):

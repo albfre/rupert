@@ -56,7 +56,7 @@ def plot_polyhedron(edges, points, color):
 
         # (x2 - x1) * alpha - (x4 - x3) * beta = x3 - x1
         # (y2 - y1) * alpha - (y4 - y3) * beta = y3 - y1
-        m = np.array([[x2 - x1, x3 - x4],[y2 - y1, y3 - y4]])
+        m = np.array([[x2 - x1, x3 - x4], [y2 - y1, y3 - y4]])
         rhs = [x3 - x1, y3 - y1]
         try:
           a,b = np.linalg.solve(m, rhs)
