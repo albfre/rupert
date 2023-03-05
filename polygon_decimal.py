@@ -1,7 +1,10 @@
 from scipy.spatial import ConvexHull
 import itertools
+from multiprocessing import Pool
+from functools import partial
 from mpmath import mp, mpf
 import mpmath
+import math
 
 def even_permutation(point):
   assert(len(point) == 3)
@@ -120,11 +123,11 @@ def contains(vq, vp):
       x1, y1 = vq[i]
       x2, y2 = vq[(i + 1) % len(vq)]
       for x, y in vp:
-        if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
+        if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) >= 0: return False
 
     return True
 
-def test_containment3(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
+def test_containment(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
   '''Verify that a solution works by explicit rotation, translation, and scaling'''
   theta_q, phi_q = q_angles
   theta_p, phi_p = p_angles
@@ -172,7 +175,12 @@ def run():
   #test_containment3(cube(), [ mpf(2.0344439 ), mpf(0.8410687) ], [mpf(2*math.pi-0.0178793 ), mpf(0.0000000) ], mpf(1.231166453), 0,0, 1.06) 
   #test_containment3(snub_cube(), [mpf(3.5464272875133513), mpf(2.541668861004088)],[mpf(3.70287224436372), mpf(1.7950400987173274)], mpf(1.910743879065393), 0, 0, mpf('1.00000000000000')) #scaling=1.0000000000000113
 
-  test_containment3(snub_cube(), [mpf(2.6122362440845954), mpf(1.8314668919060075)],[mpf(5.198357261240355), mpf(0.5845266568498758)], mpf(-1.1558523612574354),0,0, mpf(1)) #=1.0000000000000133
+  test_containment(snub_cube(), [mpf(2.6122362440845954), mpf(1.8314668919060075)],[mpf(5.198357261240355), mpf(0.5845266568498758)], mpf(-1.1558523612574354),0,0, mpf(1)) #=1.0000000000000133
+
+def test_wrapper(p, angles):
+  tq, pq, tp, pp, a = angles
+  c = test_containment(p, [tq, pq],[tp, pp], a,0,0, mpf(1))
+  return c
 
 def run_brute():
   delta = mpf('0.000000000000001')
@@ -187,26 +195,46 @@ def run_brute():
   u = mpf(0)
   v = mpf(0)
 
-  n = 10
-  for i in range(n):
-    tq = theta_q + delta * (i - n/2)
-    for j in range(n):
-      pq = phi_q + delta * (j - n/2)
-      for k in range(n):
-        tp = theta_p + delta * (k - n/2)
-        for l in range(n):
-          pp = phi_p + delta * (l - n/2)
-          for m in range(n):
-            a = alpha + delta * (m - n/2)
-            angles.append([tq, pq, tp, pp, a])
+  n = 100
+  thetas = [2 * mpf('3.1415926535897932384626433832795028841971') * i / n for i in range(n)]
+  phis = [mpmath.acos(-1 + mpf(2) * j / (n - 1)) for j in range(n)]
+  alphas = thetas
+  angles = [(theta, phi) for theta in thetas for phi in phis]
+  angles = [qa + pa + (alpha,) for qa in angles for pa in angles for alpha in alphas]
 
   print('Angles: %s ' % len(angles))
   i = 0
   any_cont = False
-  for tq, pq, tp, pp, a in angles:
-    if i % 100 == 0:
-      print(str(i) + " " + str(any_cont))
-    c = test_containment3(snub_cube(), [tq, pq],[tp, pp], a,0,0, mpf(1)) #=1.0000000000000133
-    any_cont = any_cont or c
-    i += 1
+  p = snub_cube()
+
+  n_starting_points = len(angles)
+  n_per_chunk = 100
+  n_chunks = round(n_starting_points / n_per_chunk + 1)
+  largest_scaling = 0.0
+  solution = None
+
+  if True:
+    with Pool() as pool:
+      for chunk_i in range(n_chunks):
+        begin_i = min(chunk_i * n_per_chunk, n_starting_points)
+        end_i = min((chunk_i + 1) * n_per_chunk, n_starting_points)
+        print('p' + str(begin_i) + ' of ' + str(len(angles)) + '. ' + str(any_cont) + ", " + str(solution))
+        if begin_i == end_i: continue
+        chunk_angles = angles[begin_i:end_i]
+        result = pool.map(partial(test_wrapper, p), chunk_angles)
+        for r, ang in zip(result, chunk_angles):
+          if r:
+            any_cont = True
+            solution = ang
+            print('Contains: ' + str(ang))
+  else:
+    for tq, pq, tp, pp, a in angles:
+      if i % 100 == 0:
+        print(str(i) + " of " + str(len(angles)) + ", " + str(any_cont) + ", " + str(solution))
+      c = test_containment(p, [tq, pq],[tp, pp], a,0,0, mpf(1)) #=1.0000000000000133
+      if c:
+        any_cont = True
+        solution = [tq, pq, tp, pp, a]
+        print('Contains: ' + str(solution))
+      i += 1
 
