@@ -81,7 +81,7 @@ def optimize(obj, x0):
   constraints = []
   cons = []
 
-  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-12)
+  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-10)
   return res
 
 def optimize_wrapper(q, p, gradient_descent, x0):
@@ -110,7 +110,7 @@ def run(p=None, n=1, gradient_descent=False, early_return=False):
   q = p
 
   thetas = [2 * math.pi * i / n for i in range(n)]
-  phis = [math.acos(-1 + (2 * i / (n - 1) if n > 1 else 0)) for i in range(n)
+  phis = [math.acos(-1 + (2 * i / (n - 1) if n > 1 else 0)) for i in range(n)]
   angles = [(theta, phi) for theta in thetas for phi in phis]
   angles = [qa + pa for qa in angles for pa in angles]
 

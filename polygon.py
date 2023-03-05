@@ -72,7 +72,7 @@ def test_containment_explicit(polyhedron, q_angles, p_angles, alpha, u, v, s = 1
   
   p1 = Polygon(points_q, theta_q, phi_q)
   p2 = Polygon(points_p, theta_p, phi_p)
-  contains = p1.contains2(p2)
+  contains = p1.contains_explicit(p2)
 
   if contains:
     print('Contains')
@@ -139,16 +139,17 @@ class Polygon:
       return False, 0.0
 
     largest_scaling = self.compute_largest_scaling(other) 
-    return largest_scaling > 1.0 + 1e-14, largest_scaling
+    return largest_scaling > 1.0 + 1e-13, largest_scaling
 
-  def contains2(self, other):
+  def contains_explicit(self, other):
     ''' Check containment by checking that the points of other are all on the same side of the lines of this '''
     for i in range(len(self.vertex_points)):
       x1, y1 = self.vertex_points[i]
       x2, y2 = self.vertex_points[(i + 1) % len(self.vertex_points)]
       
       for x, y in other.vertex_points:
-        if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
+        if (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x) <= 0: return False
+        #if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
 
     return True
 

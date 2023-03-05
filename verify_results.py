@@ -38,4 +38,4 @@ def verify_results():
     test_containment_explicit(read_file('Johnson/DiminishedRhombicosidodecahedron.txt')[1],[4.723800802824783, math.acos(0.322995794225)], [3.3181200432255, math.acos(-0.4325411974)],5.1601146 , 0.0003653 , 0.0103378 , 1.000269) # J76 1.0002693188
 
 if __name__ == '__main__':
-  verify_new_results()
+  verify_results()
