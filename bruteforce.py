@@ -1,11 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import math
-import itertools
 import time
 from multiprocessing import Pool
 from functools import partial
-from polytopes import *
+from polyhedra import *
 from polygon import *
 from projection import *
 

@@ -6,6 +6,8 @@ from mpmath import mp, mpf
 import mpmath
 import math
 
+golden_ratio = (1.0 + mpmath.sqrt(5)) / 2
+
 def even_permutation(point):
   assert(len(point) == 3)
   permutation_points = []
@@ -49,6 +51,35 @@ def snub_cube():
   r += [p for p in even_permutations(plus_minus_iter([mpf(1), 1 / t, t])) if has_odd_number_of_minus_signs(p)]
   r += [p for p in odd_permutations(plus_minus_iter([mpf(1), 1 / t, t])) if has_even_number_of_minus_signs(p)]
   return r
+
+def rhombicosidodecahedron():
+  r = []
+  r += even_permutations(plus_minus_iter([1, 1, golden_ratio**3]))
+  r += even_permutations(plus_minus_iter([golden_ratio**2, golden_ratio, 2 * golden_ratio]))
+  r += even_permutations(list(itertools.product((-(2+golden_ratio),2+golden_ratio), (0,), (-golden_ratio**2, golden_ratio**2))))
+  return r
+
+def snub_dodecahedron():
+  xi = (golden_ratio / 2 + 0.5 * mpmath.sqrt(golden_ratio - 5.0 / 27))**(1.0 / 3) + (golden_ratio / 2 - 0.5 * mpmath.sqrt(golden_ratio - 5.0 / 27))**(1.0 / 3)
+  alpha = xi - 1.0 / xi
+  beta = xi * golden_ratio + golden_ratio**2 + golden_ratio / xi
+  phi = golden_ratio
+  r = []
+
+  p = [2 * alpha, 2, 2 * beta]
+  r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
+
+  p = [alpha + beta / phi + phi, -alpha * phi + beta + 1 / phi, alpha / phi + beta * phi - 1 ]
+  r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
+
+  p = [alpha + beta / phi - phi, alpha * phi - beta + 1 / phi, alpha / phi + beta * phi + 1]
+  r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
+
+  p = [-alpha / phi + beta * phi + 1, -alpha + beta / phi - phi, alpha * phi + beta - 1 / phi]
+  r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
+
+  p = [-alpha / phi + beta * phi -1, alpha - beta / phi - phi, alpha * phi + beta + 1 / phi]
+  r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
 
 def read_polyhedron(f):
   lines = [l for l in open(f).readlines() if len(l) > 0]
@@ -161,30 +192,36 @@ def test_containment(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
 
   if contains(vq, vp):
     print('contains')
-    print(str(theta_p) + " & " + str(phi_p) + " & " + str(theta_q) + " & " + str(phi_q) + " & " + str(s))
-    print(str(alpha) + " & " + str(u) + " & " + str(v))
+    print(str((theta_q, phi_q, theta_p, phi_p, alpha, u, v, s)))
+    #print(str(theta_p) + " & " + str(phi_p) + " & " + str(theta_q) + " & " + str(phi_q) + " & " + str(s))
+    #print(str(alpha) + " & " + str(u) + " & " + str(v))
     return True
+
   return False
 
 
 def run():
-  mp.dpi = 50
+  mp.dps = 50
 
 #(3.5464272875133513, 2.541668861004088) contains (t,p) = (3.70287224436372, 1.7950400987173274) with alpha=1.910743879065393, translation=(-7.22261649110295e-14, 6.538120156978815e-14), scaling=1.0000000000000113
 
   #test_containment3(cube(), [ mpf(2.0344439 ), mpf(0.8410687) ], [mpf(2*math.pi-0.0178793 ), mpf(0.0000000) ], mpf(1.231166453), 0,0, 1.06) 
   #test_containment3(snub_cube(), [mpf(3.5464272875133513), mpf(2.541668861004088)],[mpf(3.70287224436372), mpf(1.7950400987173274)], mpf(1.910743879065393), 0, 0, mpf('1.00000000000000')) #scaling=1.0000000000000113
 
-  test_containment(snub_cube(), [mpf(2.6122362440845954), mpf(1.8314668919060075)],[mpf(5.198357261240355), mpf(0.5845266568498758)], mpf(-1.1558523612574354),0,0, mpf(1)) #=1.0000000000000133
+  #test_containment(snub_cube(), [mpf(2.6122362440845954), mpf(1.8314668919060075)],[mpf(5.198357261240355), mpf(0.5845266568498758)], mpf(-1.1558523612574354),0,0, mpf(1)) #=1.0000000000000133
+
+  #test_containment(snub_cube(), [mpf(0), mpf()],[mpf('5.026548245743669'), mpf('3.1415926535897931')], mpf('0.62831853071795862'),0,0, mpf('1.000000000000000000001')) #=1.0000000000000133
+
+  test_containment(snub_cube(), [mpf('0.0'), mpf('3.1415926535897932384626433832795028841971693993751068')], [mpf('3.7699111843077518861551720599354034610365199999999974'), mpf('0.0')], mpf('3.7699111843077518861551720599354034610365199999999974'), 0, 0,mpf('1.0000000000000000000000000000001'))
+
 
 def test_wrapper(p, angles):
   tq, pq, tp, pp, a = angles
-  c = test_containment(p, [tq, pq],[tp, pp], a,0,0, mpf(1))
+  c = test_containment(p, [tq, pq],[tp, pp], a,0,0, mpf('1.0000000000000000000000000000001'))
   return c
 
 def run_brute():
-  delta = mpf('0.000000000000001')
-
+  mp.dps = 50
   angles = []
   theta_q = mpf(2.6122362440845954)
   phi_q = mpf(1.8314668919060075)
@@ -195,7 +232,7 @@ def run_brute():
   u = mpf(0)
   v = mpf(0)
 
-  n = 100
+  n = 30
   thetas = [2 * mpf('3.1415926535897932384626433832795028841971') * i / n for i in range(n)]
   phis = [mpmath.acos(-1 + mpf(2) * j / (n - 1)) for j in range(n)]
   alphas = thetas
@@ -231,7 +268,7 @@ def run_brute():
     for tq, pq, tp, pp, a in angles:
       if i % 100 == 0:
         print(str(i) + " of " + str(len(angles)) + ", " + str(any_cont) + ", " + str(solution))
-      c = test_containment(p, [tq, pq],[tp, pp], a,0,0, mpf(1)) #=1.0000000000000133
+      c = test_containment(p, [tq, pq],[tp, pp], a, 0,0, mpf('1.0000000000000000000000000000001')) #=1.0000000000000133
       if c:
         any_cont = True
         solution = [tq, pq, tp, pp, a]

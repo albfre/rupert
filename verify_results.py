@@ -1,5 +1,5 @@
 from polygon import *
-from polytopes import *
+from polyhedra import *
 
 def test_results():
     ''' Test of containment printing the results in a Latex-friendly manner '''

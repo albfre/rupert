@@ -1,5 +1,4 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
-import numpy as np
 import math
 from projection import *
 
@@ -98,12 +97,11 @@ class Polygon:
     self.largest_vertex = None
     self.is_centrally_symmetric = True
 
-    if True:
-      for point in self.vertex_points:
-        minus_point = [-point[0], -point[1]]
-        if not any(distance(minus_point, p) < 1e-5 for p in self.vertex_points):
-          self.is_centrally_symmetric = False
-          break
+    for point in self.vertex_points:
+      minus_point = [-point[0], -point[1]]
+      if not any(distance(minus_point, p) < 1e-5 for p in self.vertex_points):
+        self.is_centrally_symmetric = False
+        break
 
   def compute_largest_scaling(self, other):
     equations = [] # Lij
@@ -149,7 +147,6 @@ class Polygon:
       
       for x, y in other.vertex_points:
         if (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x) <= 0: return False
-        #if (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1) > 0: return False
 
     return True
 

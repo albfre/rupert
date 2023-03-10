@@ -1,5 +1,4 @@
 import itertools
-import numpy as np
 import math
 
 golden_ratio = (1.0 + math.sqrt(5)) / 2
@@ -77,12 +76,6 @@ def deltoidal_hexecontahedron():
 
 def pentagonal_hexecontahedron():
   return read_file('Catalan/12LpentagonalHexecontahedron.txt')[1]
-
-def random_polytope(n):
-  rng = np.random.default_rng(1338)
-  points = rng.random((n, 3))
-  points = [[p[0]-0.5, p[1]-0.5, p[2]-0.5] for p in points]
-  return points
 
 def even_permutation(point):
   assert(len(point) == 3)
@@ -205,7 +198,6 @@ def truncated_icosidodecahedron():
   r += even_permutations(plus_minus_iter([2 * golden_ratio -1, 2, 2 + golden_ratio]))
   r += even_permutations(plus_minus_iter([golden_ratio, 3, 2 * golden_ratio]))
   return r
-
 
 def snub_dodecahedron():
   xi = (golden_ratio / 2 + 0.5 * math.sqrt(golden_ratio - 5.0 / 27))**(1.0 / 3) + (golden_ratio / 2 - 0.5 * math.sqrt(golden_ratio - 5.0 / 27))**(1.0 / 3)

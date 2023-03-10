@@ -1,17 +1,13 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
-import matplotlib.pyplot as plt
 import math
-import itertools
 import time
 from multiprocessing import Pool
 from functools import partial
 import sys
 from scipy.optimize import minimize
-from polytopes import *
+from polyhedra import *
 from polygon import *
 from projection import *
-from os import listdir
-from os.path import isfile, join
   
 class Result:
   def __init__(self):
@@ -68,20 +64,13 @@ def optimize_gradient_descent(obj, x):
   return r
 
 def optimize(obj, x0):
-# variables:
-# q: theta_q, phi_q
-# p: theta_p, phi_p
-
-# maximize scaling
-# theta, phi
-
   method = 'Nelder-Mead' # SLSQP
   jac = None if method == 'Nelder-Mead' else '3-point'
 
   constraints = []
   cons = []
 
-  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-10)
+  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-4)
   return res
 
 def optimize_wrapper(q, p, gradient_descent, x0):
@@ -147,27 +136,3 @@ def run(p=None, n=1, gradient_descent=False, early_return=False):
     theta_q, phi_q, theta_p, phi_p = best_r.x
     contains, largest_scaling, alpha, trans = test_containment(p, [theta_q, phi_q], [theta_p, phi_p])
   return largest_scaling > 1.0, best_r
-  
-def run_johnson():
-  d = 'Johnson/'
-
-  left = ['Gyrate Rhombicosidodecahedron', 'Parabigyrate Rhombicosidodecahedron', 'Metabigyrate Rhombicosidodecahedron', 'Trigyrate Rhombicosidodecahedron', 'Paragyrate Diminished Rhombicosidodecahedron']
-
-  files = [f for f in listdir(d) if isfile(join(d, f)) and len(f) > 4 and f[-4:] == '.txt']
-  for f in files:
-    name, p = read_file(d + f)
-    if name in left:
-      print(name)
-      contains, r = run(p, 5)
-      if contains:
-        print(name + ' contains ' + str(r))
-
-def run_catalan():
-  d = 'Catalan/'
-  files = [f for f in listdir(d) if isfile(join(d, f)) and len(f) > 4 and f[-4:] == '.txt']
-
-  for f in files:
-    name, p = read_file(d + f)
-    contains, r = run(p, 5)
-    if contains:
-      print(name + ' contains ' + str(r))
