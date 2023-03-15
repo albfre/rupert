@@ -1,6 +1,7 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
+import numpy as np
 from polygon import *
-from polytopes import *
+from polyhedra import *
 from projection import *
 import matplotlib.pyplot as plt
 import matplotlib
@@ -26,7 +27,7 @@ def get_front(vertices, hull, edges):
         change = True
   return front
 
-def plot_polyhedron(edges, points, color):
+def plot_polyhedron(edges, points, color, linewidth=2):
   all_points = set(range(len(points)))
   q2d = Polygon(points)
   hull = set(q2d.hull.vertices)
@@ -75,7 +76,7 @@ def plot_polyhedron(edges, points, color):
       linetype = ':'
     x0, y0 = points[v0]
     x1, y1 = points[v1]
-    plt.plot([x0, x1], [y0, y1], color + linetype)
+    plt.plot([x0, x1], [y0, y1], color + linetype, linewidth=linewidth)
 
 def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1.0):
   theta_q, phi_q = q_angles
@@ -116,12 +117,12 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   hq = ConvexHull(points_q)
   hp = ConvexHull(points_p)
 
-  plot_polyhedron(edges, points_q, 'r')
-  plot_polyhedron(edges, points_p, 'k')
+  plot_polyhedron(edges, points_q, 'r', 2)
+  plot_polyhedron(edges, points_p, 'k', 1)
 
   p1 = Polygon(points_q, theta_q, phi_q)
   p2 = Polygon(points_p, theta_p, phi_p)
-  contains = p1.contains2(p2)
+  contains = p1.contains_explicit(p2)
   print('Contains: %s' % contains)
 
   plt.xticks([])
@@ -143,9 +144,11 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
     ax.axis([-2,2,-2,2])
     ax.set_aspect('equal')
     bbox = matplotlib.transforms.Bbox([[1.3,0.5],[5.2,4.3]])
+    #plt.savefig(name + '.svg', bbox_inches='tight')
     plt.savefig(name + '.eps', format='eps', bbox_inches='tight')
   else:
     ax.axis('equal')
+    #plt.savefig(name + '.svg', bbox_inches='tight' )
     plt.savefig(name + '.eps', format='eps', bbox_inches='tight' )
   plt.show()
 
