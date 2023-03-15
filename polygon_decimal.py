@@ -52,6 +52,7 @@ def snub_cube():
   r += [p for p in odd_permutations(plus_minus_iter([mpf(1), 1 / t, t])) if has_even_number_of_minus_signs(p)]
   return r
 
+
 def rhombicosidodecahedron():
   r = []
   r += even_permutations(plus_minus_iter([1, 1, golden_ratio**3]))
@@ -80,6 +81,8 @@ def snub_dodecahedron():
 
   p = [-alpha / phi + beta * phi -1, alpha - beta / phi - phi, alpha * phi + beta + 1 / phi]
   r += even_permutations(p for p in plus_minus_iter(p) if has_odd_number_of_minus_signs(p))
+
+  return r
 
 def read_polyhedron(f):
   lines = [l for l in open(f).readlines() if len(l) > 0]
@@ -202,6 +205,9 @@ def test_containment(polyhedron, q_angles, p_angles, alpha, u, v, s = 1.0):
 
 def run():
   mp.dps = 50
+
+#(t,p) = (1.3355052645050458, 3.5572615460715338) contains (t,p) = (3.244130736424789, 1.9743356281258508) with alpha=-0.2562831672464936, translation=(5.74170622657169e-14, -7.221615043432824e-14), scaling=1.0000000000000109
+  #test_containment(snub_dodecahedron(), [ mpf(1.3355052645050458), mpf(3.5572615460715338) ], [mpf(3.244130736424789), mpf(1.9743356281258508) ], mpf(-0.2562831672464936), 0,0, mpf(1)) 
 
 #(3.5464272875133513, 2.541668861004088) contains (t,p) = (3.70287224436372, 1.7950400987173274) with alpha=1.910743879065393, translation=(-7.22261649110295e-14, 6.538120156978815e-14), scaling=1.0000000000000113
 

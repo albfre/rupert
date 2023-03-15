@@ -66,21 +66,15 @@ def optimize_gradient_descent(obj, x):
 def optimize(obj, x0):
   method = 'Nelder-Mead' # SLSQP
   jac = None if method == 'Nelder-Mead' else '3-point'
-
-  constraints = []
-  cons = []
-
-  res = minimize(obj, x0, method=method, jac=jac, constraints=constraints, tol=1e-4)
-  return res
+  return minimize(obj, x0, method=method, jac=jac, constraints=[], tol=1e-4)
 
 def optimize_wrapper(q, p, gradient_descent, x0):
   try:
     obj = lambda x: objective(x, q, p)
     if gradient_descent:
-      r = optimize_gradient_descent(obj, x0)
+      return optimize_gradient_descent(obj, x0)
     else:
-      r = optimize(obj, x0)
-    return r
+      return optimize(obj, x0)
   except KeyboardInterrupt:
     sys.exit()
   except:
