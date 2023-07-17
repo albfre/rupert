@@ -133,6 +133,10 @@ def read_polyhedron(f):
 
   return name, points, faces, edges
 
+def j77():
+  name, points, faces, edges = read_polyhedron('Johnson/ParagyrateDiminishedRhombicosidodecahedron.txt')
+  return points
+
 def project_to_plane(points, theta, phi):
   assert(all(len(p) == 3 for p in points))
   st = mpmath.sin(theta)
@@ -218,7 +222,8 @@ def run():
 
   #test_containment(snub_cube(), [mpf(0), mpf()],[mpf('5.026548245743669'), mpf('3.1415926535897931')], mpf('0.62831853071795862'),0,0, mpf('1.000000000000000000001')) #=1.0000000000000133
 
-  test_containment(snub_cube(), [mpf('0.0'), mpf('3.1415926535897932384626433832795028841971693993751068')], [mpf('3.7699111843077518861551720599354034610365199999999974'), mpf('0.0')], mpf('3.7699111843077518861551720599354034610365199999999974'), 0, 0,mpf('1.0000000000000000000000000000001'))
+
+  #test_containment(snub_cube(), [mpf('0.0'), mpf('3.1415926535897932384626433832795028841971693993751068')], [mpf('3.7699111843077518861551720599354034610365199999999974'), mpf('0.0')], mpf('3.7699111843077518861551720599354034610365199999999974'), 0, 0,mpf('1.0000000000000000000000000000001'))
 
 
 def test_wrapper(p, angles):

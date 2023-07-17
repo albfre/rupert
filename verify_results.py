@@ -3,6 +3,7 @@ from polyhedra import *
 
 def test_results():
     ''' Test of containment printing the results in a Latex-friendly manner '''
+    test_containment(j77(), [3.55952967888462, 1.0965853638683174], [1.0789536534034405, 2.4567690596459197])
 
     # Catalan
     test_containment(read_file('Catalan/01TriakisTetrahedron.txt')[1], [1.54810735, 2.35615010], [2*math.pi-0.00005492, 0.81723402]) # 1.0000040769 NM optimize
@@ -17,6 +18,7 @@ def test_results():
 
 def verify_results():
     ''' Test of containment using explicit rotation and translation '''
+
 
     # Catalan
     print('Triakis tetrahedron')

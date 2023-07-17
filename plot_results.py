@@ -27,7 +27,7 @@ def get_front(vertices, hull, edges):
         change = True
   return front
 
-def plot_polyhedron(edges, points, color, linewidth=2):
+def plot_polyhedron(edges, points, color, linewidth=2, linestyle='-'):
   all_points = set(range(len(points)))
   q2d = Polygon(points)
   hull = set(q2d.hull.vertices)
@@ -71,12 +71,13 @@ def plot_polyhedron(edges, points, color, linewidth=2):
 
   for v0, v1 in edges:
     if (v0, v1) in visible_edges:
-      linetype = '-'
+      linetype = linestyle
     else:
       linetype = ':'
     x0, y0 = points[v0]
     x1, y1 = points[v1]
-    plt.plot([x0, x1], [y0, y1], color + linetype, linewidth=linewidth)
+    if (v0,v1) in visible_edges:
+      plt.plot([x0, x1], [y0, y1], color=color, linestyle=linetype, linewidth=linewidth)
 
 def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1.0):
   theta_q, phi_q = q_angles
@@ -102,6 +103,7 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   # For the cube, we want to show the margin between inner and outer polyhedron, so the inner polyhedron is not scaled
   if 'cube' in name:
     s = 1
+  s = 1
 
   points_q = project_to_plane(points, theta_q, phi_q)
   points_p = project_to_plane(points, theta_p, phi_p)
@@ -117,8 +119,8 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   hq = ConvexHull(points_q)
   hp = ConvexHull(points_p)
 
-  plot_polyhedron(edges, points_q, 'r', 2)
-  plot_polyhedron(edges, points_p, 'k', 1)
+  plot_polyhedron(edges, points_q, 'red', 2, ':')
+  plot_polyhedron(edges, points_p, 'k', 1, '-')
 
   p1 = Polygon(points_q, theta_q, phi_q)
   p2 = Polygon(points_p, theta_p, phi_p)
@@ -170,6 +172,7 @@ def plot_solutions():
       name, points, faces, edges = read_polyhedron('Johnson/GyroelongatedPentagonalRotunda.txt')
       plot_containment(name + ' (J25)', points, edges, [1.5697500508, math.acos(0.516259456)], [3.44208101, math.acos(-0.1893870555)] , 0.0031319 , 0.0013265 , -0.0541425, 1.000089) # J25 1.0000894999 optimize
 
+    if False:
       name, points, faces, edges = read_polyhedron('Johnson/GyroelongatedSquareBicupola.txt')
       plot_containment(name + ' (J45)', points, edges, [4.71940540634669, math.acos(-0.57234816598)], [3.148896509339, math.acos(0.002509670578455)], 0.0040334 , -0.0017357 , 0.0774202, 1.000009 ) # J45 1.00000956 optimize
 

@@ -77,6 +77,9 @@ def deltoidal_hexecontahedron():
 def pentagonal_hexecontahedron():
   return read_file('Catalan/12LpentagonalHexecontahedron.txt')[1]
 
+def j77():
+  return read_file('Johnson/ParagyrateDiminishedRhombicosidodecahedron.txt')[1]
+
 def even_permutation(point):
   assert(len(point) == 3)
   permutation_points = []

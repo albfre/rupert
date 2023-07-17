@@ -1,6 +1,7 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import math
 from projection import *
+import itertools
 
 def distance(p1, p2):
   return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))
@@ -60,8 +61,8 @@ def test_containment_explicit(polyhedron, q_angles, p_angles, alpha, u, v, s = 1
 
   n = 7
   alpha = round(alpha, n)
-  u = round(u, n)
   v = round(v, n)
+  u = round(u, n)
 
   points_q = project_to_plane(polyhedron, theta_q, phi_q)
   points_p = project_to_plane(polyhedron, theta_p, phi_p)
@@ -137,7 +138,7 @@ class Polygon:
       return False, 0.0
 
     largest_scaling = self.compute_largest_scaling(other) 
-    return largest_scaling > 1.0 + 1e-13, largest_scaling
+    return largest_scaling > 1.0 + 1e-14, largest_scaling
 
   def contains_explicit(self, other):
     ''' Check containment by checking that the points of other are all on the same side of the lines of this '''
@@ -146,7 +147,7 @@ class Polygon:
       x2, y2 = self.vertex_points[(i + 1) % len(self.vertex_points)]
       
       for x, y in other.vertex_points:
-        if (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x) <= 0: return False
+        if (x1 - x) * (y2 - y) - (y1 - y) * (x2 - x) <= 1e-14: return False
 
     return True
 
