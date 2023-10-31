@@ -1,7 +1,7 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import math
-from projection import *
 import itertools
+from projection import *
 
 def distance(p1, p2):
   return math.sqrt(sum((x-y)**2 for x, y in zip(p1, p2)))

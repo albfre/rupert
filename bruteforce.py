@@ -100,7 +100,7 @@ def run():
   n = 11
   t = time.time()
   qa = [2.40587132115149, 0.649014357100288]
-  pa =[5.071119649324, -8.998662569e-5]
+  pa = [5.071119649324, -8.998662569e-5]
   q, p, max_scaling = search_sphere(cube(), n)
 
   c = read_file('Catalan/07LpentagonalIcositetrahedron.txt')[1]

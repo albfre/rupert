@@ -15,7 +15,7 @@ A number of polyhedra (the Platonic and the Archimedean, and some of the Catalan
 
 ## Additional search methods
 
-`bruteforce.py` contains a bruteforce search method, and results for a few polyhedra.
+`bruteforce.py` contains a bruteforce search method.
 
 `optimize_3d.py` contains an optimization method trying to maximize the distance between the rotated projection of a polyhedron to the convex hull of different silhouettes of of the polyhedron.
 
@@ -23,8 +23,16 @@ A number of polyhedra (the Platonic and the Archimedean, and some of the Catalan
 
 ## Verification
 
-`verify_results.py` contains calculations for explicit verification of found results.
+`verify_results.py` contains calculations for explicit verification of found results. Run from command line by:
+
+```
+python verify_results.py
+```
 
 ## Plotting
 
-`plot_results.py` contains methods to plot projections of polyhedra.
+`plot_results.py` contains methods to plot projections of polyhedra. Run from command line by:
+
+```
+python plot_results.py
+```

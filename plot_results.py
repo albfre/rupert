@@ -1,10 +1,10 @@
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
 from polygon import *
 from polyhedra import *
 from projection import *
-import matplotlib.pyplot as plt
-import matplotlib
 
 def get_front(vertices, hull, edges):
   except_hull = list(vertices - hull)
@@ -119,7 +119,7 @@ def plot_containment(name, points, edges, q_angles, p_angles, alpha, u, v, s = 1
   hq = ConvexHull(points_q)
   hp = ConvexHull(points_p)
 
-  plot_polyhedron(edges, points_q, 'red', 2, ':')
+  plot_polyhedron(edges, points_q, 'grey', 2, ':')
   plot_polyhedron(edges, points_p, 'k', 1, '-')
 
   p1 = Polygon(points_q, theta_q, phi_q)
